@@ -35,6 +35,7 @@ Al importar se aplican estas reglas:
 - El alumnado sin grupo va al grupo **⚠ Sin grupo**.
 - Si un mismo NIA o documento aparece varias veces, la persona se importa una sola vez, dando prioridad a la aparición que tiene grupo.
 - Si el archivo está dañado, incompleto o no contiene ningún usuario (aunque tenga grupos), la aplicación lo rechaza con un mensaje de error y no importa nada. Al actualizar el XML, así se evita que un archivo equivocado deje el proyecto vacío.
+- Por seguridad, también rechaza un archivo de más de 20 MB o que lleve una declaración `<!DOCTYPE`. El XML que exporta el programa de gestión del centro no lleva esa declaración y pesa mucho menos, así que esto solo afecta a archivos que no son el del centro.
 - Del propio centro se guarda el **curso**, que el XML indica con el año en que empieza. Sirve para distinguir las solicitudes de carnet y de publicación del curso anterior (ver [Carnets y publicación oficial](carnets.md#solicitudes-de-otros-proyectos-y-del-curso-anterior)).
 
 ## El informe de importación
@@ -74,6 +75,7 @@ En el apartado **Ubicaciones**:
 |---|---|
 | Carpeta del proyecto | La carpeta que elegiste al crearlo. |
 | Archivo XML | El último XML usado, al crear el proyecto o al actualizarlo. En proyectos antiguos puede aparecer «No configurado». |
+| XML compartido en el depósito | El archivo con el que ese XML está publicado en el depósito para los demás equipos, con la fecha y el equipo que lo publicó. «Sin publicar» si todavía no lo está, y «No configurado» en los proyectos creados antes de la versión 1.25 hasta la siguiente actualización del XML. Ver [El XML compartido con los demás equipos](#el-xml-compartido-con-los-demas-equipos). |
 | Carpeta de entrada (ingest) | La carpeta de la que se recogen las fotos nuevas. Lleva la nota «Personalizada» si la has redirigido, y «No disponible: mientras tanto se usa la carpeta por defecto» si no se encuentra. |
 | Imágenes capturadas (imports) | La carpeta donde se guardan todas las fotos del proyecto. |
 | Base de datos | El archivo con los usuarios, grupos y enlaces. |
@@ -110,9 +112,25 @@ Las personas se reconocen por su NIA (alumnado) o su documento (personal). De la
 
 Tras la actualización, el archivo `import-report.log` se reescribe con la lista actual del alumnado sin grupo, y la fila **Archivo XML** de la información del proyecto pasa a mostrar el nuevo archivo. Si la actualización falla o respondes **No**, esa fila sigue mostrando el XML anterior.
 
+Si el proyecto tiene depósito, al terminar la actualización el XML se publica en él para los demás equipos (ver la sección siguiente). El mensaje final lo indica, y también si no se ha podido publicar y por qué. La actualización se aplica igual aunque no se publique.
+
 > **Importante:** Revisa el número de usuarios eliminados antes de aceptar. Un XML correcto pero parcial, por ejemplo con un solo grupo, haría que el resto del centro pareciera dado de baja.
 
 > **Consejo:** Las versiones anteriores a la 1.10.0 perdían los ceros a la izquierda de los NIA y documentos formados solo por números: `0123456` se guardaba como `123456`, y las fotos del depósito con el identificador completo no se encontraban. Si tu proyecto es anterior, actualiza el XML una vez: la aplicación reconoce a esas personas y guarda su identificador con los ceros, sin perder sus fotos.
+
+## El XML compartido con los demás equipos
+
+Cada equipo trabaja con su propio proyecto. Para que todos puedan tener el mismo listado del centro, la aplicación deja una copia del XML en la carpeta `Centro` del depósito:
+
+- **Cuándo**: al actualizar el XML y al configurar el depósito. Un proyecto recién creado todavía no tiene depósito, así que su XML se publica cuando se le configura uno.
+- **Cómo se llama**: `centro_AAAAMMDDHHMMSS_EQUIPO.xml`, con la fecha y hora de publicación y el nombre del equipo que lo publicó.
+- **Una sola vez**: si ese mismo XML ya está en `Centro`, lo haya publicado quien lo haya publicado, no se añade otra copia.
+- **Solo el XML aplicado**: si el archivo ha cambiado desde que se aplicó, o ya no está, no se publica.
+- **Nada se borra**: los XML anteriores se quedan en `Centro` como historial.
+
+Por ahora la aplicación solo publica. Para usar en otro equipo el XML publicado, ábrelo desde **Proyecto > Actualizar archivo XML** eligiendo el archivo de la carpeta `Centro`.
+
+> **Importante:** las versiones anteriores a la 1.25 no publican. Mientras algún equipo siga con una de ellas, puede haber actualizaciones del XML que no estén en `Centro`.
 
 ## El grupo Eliminados
 

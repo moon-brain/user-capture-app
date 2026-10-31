@@ -5,6 +5,27 @@ const { parseAcademicYear } = require('./academicYear');
 
 const NO_USERS = 'El archivo XML no contiene ningún usuario (alumnos, docentes ni no docentes)';
 
+// Far above a real school XML (about 1 MB for two thousand people), low enough
+// that a wrong file dropped in the shared Centro folder is not read whole
+const MAX_XML_BYTES = 20 * 1024 * 1024;
+
+// A DOCTYPE is how an XML declares entities, and expanding nested ones is the
+// "billion laughs" attack; fast-xml-parser 5 still expands a small one. The
+// school's management software never writes one, so any file with it is
+// rejected. Comments and CDATA are skipped: there the text is literal.
+const DOCTYPE_PATTERN = /<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->|(<!DOCTYPE)/gi;
+
+/**
+ * @param {string} xml
+ * @returns {boolean}
+ */
+function hasDoctype(xml) {
+  for (const match of xml.matchAll(DOCTYPE_PATTERN)) {
+    if (match[1]) return true;
+  }
+  return false;
+}
+
 // The five characters that mean something in XML go back as their named
 // entity, which the parser decodes; written raw they would break the markup
 const MARKUP = { 34: '&quot;', 38: '&amp;', 39: '&apos;', 60: '&lt;', 62: '&gt;' };
@@ -65,7 +86,16 @@ class XMLUserParser {
 
   async parse() {
     try {
+      const { size } = fs.statSync(this.xmlPath);
+      if (size > MAX_XML_BYTES) {
+        throw new Error(`El archivo ocupa ${Math.round(size / 1024 / 1024)} MB, más de lo que puede ocupar un XML del centro (${MAX_XML_BYTES / 1024 / 1024} MB)`);
+      }
+
       const xmlData = fs.readFileSync(this.xmlPath, 'utf8');
+
+      if (hasDoctype(xmlData)) {
+        throw new Error('El archivo lleva una declaración DOCTYPE, que el XML del centro no usa; no se analiza por seguridad');
+      }
 
       // Validate before parsing. The parser is lenient: given a truncated file
       // it returns whatever it managed to read, so a half-downloaded XML would
@@ -218,4 +248,4 @@ class XMLUserParser {
   }
 }
 
-module.exports = Object.assign(XMLUserParser, { decodeCharacterReferences });
+module.exports = Object.assign(XMLUserParser, { decodeCharacterReferences, hasDoctype, MAX_XML_BYTES });

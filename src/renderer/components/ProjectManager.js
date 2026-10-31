@@ -288,6 +288,13 @@
           successMessage += `Usuarios movidos a Eliminados: ${results.movedToDeleted}\n`;
           successMessage += `Usuarios eliminados permanentemente: ${results.permanentlyDeleted}`;
 
+          const sharedNote = ProjectManager.describeSharedXml(confirmResult.sharedXml);
+          if (sharedNote) {
+            successMessage += `
+
+${sharedNote}`;
+          }
+
           // Reload project data first
           await this.loadProjectData();
 
@@ -296,6 +303,33 @@
         } else {
           this.onShowInfoModal('Error', 'Error al aplicar cambios: ' + confirmResult.error);
         }
+      }
+    }
+
+    /**
+     * What happened to the XML shared with the other teams, as the update
+     * message says it; null when there is nothing worth saying
+     * @param {Object|undefined} sharedXml - { status, fileName, error } from confirm-update-xml
+     * @returns {string|null}
+     */
+    static describeSharedXml(sharedXml) {
+      if (!sharedXml) return null;
+      const notShared = 'El XML no se ha publicado para los demás equipos';
+      switch (sharedXml.status) {
+        case 'published':
+          return 'El XML se ha publicado en el depósito para los demás equipos.';
+        case 'already':
+          return 'Este XML ya estaba publicado en el depósito.';
+        case 'no-repository':
+          return `${notShared}: el proyecto no tiene depósito configurado.`;
+        case 'repository-unavailable':
+          return `${notShared}: el depósito no está disponible.`;
+        case 'changed':
+          return `${notShared}: el archivo ha cambiado desde que se analizó.`;
+        case 'failed':
+          return `${notShared}: ${sharedXml.error || 'error desconocido'}.`;
+        default:
+          return null;
       }
     }
 

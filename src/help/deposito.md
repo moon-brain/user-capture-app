@@ -7,7 +7,7 @@ El depósito es la carpeta compartida donde están las fotos oficiales de los us
 - Es una carpeta normal. Puede estar en tu equipo, en una unidad de red o en una carpeta de Google Drive sincronizada en el equipo.
 - Cada foto se llama con el identificador de su usuario: `{NIA}.jpg` para el alumnado y `{DNI}.jpg` para el personal. También se reconocen las terminadas en `.jpeg`, y da igual que la extensión esté en mayúsculas o minúsculas.
 - Solo cuentan las fotos que están directamente en la carpeta, no las de sus subcarpetas.
-- La aplicación crea dentro algunas subcarpetas de trabajo: `To-Print-ID` y `Printed-ID` para los carnets, `To-Publish` para la publicación oficial (ver [Carnets y publicación oficial](carnets.md)) y `Reemplazadas` para las fotos sustituidas al exportar.
+- La aplicación crea dentro algunas subcarpetas de trabajo: `To-Print-ID` y `Printed-ID` para los carnets, `To-Publish` para la publicación oficial (ver [Carnets y publicación oficial](carnets.md)), `Reemplazadas` para las fotos sustituidas al exportar y `Centro` para el XML del centro compartido con los demás equipos (ver [Proyectos](proyectos.md#el-xml-compartido-con-los-demas-equipos)).
 - Cada proyecto tiene su propio depósito configurado.
 
 > **Importante:** la aplicación no se conecta a Google Drive por su cuenta: trabaja con la carpeta tal como la ve el equipo. Si el depósito está en Google Drive, esa carpeta tiene que estar disponible en el explorador de archivos.

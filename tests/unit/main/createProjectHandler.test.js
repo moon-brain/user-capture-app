@@ -173,6 +173,20 @@ describe('create-project handler', () => {
     await expect(state.dbManager.getProjectSetting('academicYear')).resolves.toBe('2026');
   });
 
+  // A new project has no repository yet: its XML is shared once it gets one
+  test('should record the XML it applied, to publish it once it has a repository', async () => {
+    const { getAppliedXml, hashXml } = require('../../../src/main/sharedXml');
+    const newPath = path.join(workPath, 'nuevo');
+    fs.mkdirSync(newPath);
+    const xmlPath = writeXml(XML);
+
+    await create(newPath, xmlPath);
+
+    const applied = await getAppliedXml(state.dbManager);
+    expect(applied.hash).toBe(hashXml(fs.readFileSync(xmlPath)));
+    expect(applied.fileName).toBeNull();
+  });
+
   test('should record no course when the XML does not give one', async () => {
     const newPath = path.join(workPath, 'nuevo');
     fs.mkdirSync(newPath);

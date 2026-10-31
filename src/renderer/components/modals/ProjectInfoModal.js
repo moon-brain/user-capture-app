@@ -28,6 +28,18 @@
 
   const NOT_SET = 'No configurado';
 
+  /**
+   * @param {string} iso
+   * @returns {string} e.g. "31/10/2026 18:05", or '' if it is not a date
+   */
+  function formatDateTime(iso) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ` +
+      `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
   class ProjectInfoModal extends BaseModal {
     constructor(config = {}) {
       super('project-info-modal', {
@@ -127,6 +139,7 @@
       this.renderRows(this.pathsEl, [
         ['Carpeta del proyecto', info.projectPath],
         ['Archivo XML', info.xmlFilePath],
+        this.sharedXmlRow(info),
         this.ingestRow(info),
         ['Imágenes capturadas (imports)', info.importsPath],
         ['Base de datos', info.databasePath],
@@ -151,6 +164,33 @@
         ['Imágenes en la carpeta imports', info.capturedImages],
         ['Imágenes con etiquetas', info.taggedImages]
       ]);
+    }
+
+    /**
+     * Row of the XML shared with the other teams through the repository
+     *
+     * Projects from before 1.25 never recorded what they applied, so theirs
+     * shows as not configured until the next XML update.
+     *
+     * @param {Object} info
+     * @returns {Array}
+     * @private
+     */
+    sharedXmlRow(info) {
+      const label = 'XML compartido en el depósito';
+      const shared = info.sharedXml;
+      if (!shared) {
+        return [label, null];
+      }
+      if (!shared.fileName) {
+        return [label, 'Sin publicar', {
+          text: 'Se publica al actualizar el XML o al configurar el depósito'
+        }];
+      }
+
+      const when = shared.publishedAt ? formatDateTime(shared.publishedAt) : '';
+      const by = shared.publishedBy ? ` por ${shared.publishedBy}` : '';
+      return [label, shared.fileName, { text: `Publicado${when ? ` el ${when}` : ''}${by}` }];
     }
 
     /**

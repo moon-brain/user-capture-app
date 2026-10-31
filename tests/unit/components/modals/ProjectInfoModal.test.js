@@ -17,6 +17,12 @@ describe('ProjectInfoModal', () => {
     name: 'Captura Carnets 2526',
     projectPath: 'D:\\Proyectos\\Captura Carnets 2526',
     xmlFilePath: 'D:\\Proyectos\\usuarios.xml',
+    sharedXml: {
+      appliedAt: new Date(2026, 9, 31, 18, 5).toISOString(),
+      fileName: 'centro_20261031180500_DIRECCION.xml',
+      publishedAt: new Date(2026, 9, 31, 18, 5).toISOString(),
+      publishedBy: 'DIRECCION'
+    },
     ingestPath: 'D:\\Proyectos\\Captura Carnets 2526\\ingest',
     configuredIngestPath: null,
     ingestIsCustom: false,
@@ -176,6 +182,41 @@ describe('ProjectInfoModal', () => {
 
       expect(valueFor(paths, 'Carpeta de entrada (ingest)')).toBe(CUSTOM);
       expect(modal.isModalOpen()).toBe(true);
+    });
+  });
+
+  describe('shared XML', () => {
+    const LABEL = 'XML compartido en el depósito';
+    const sharedRow = () => Array.from(document.querySelectorAll('#project-info-modal-paths .about-info-row'))
+      .find((row) => row.querySelector('.about-label').textContent === LABEL);
+    const note = () => sharedRow().querySelector('.project-info-note');
+
+    test('should show the published file, when and by which team', async () => {
+      await modal.show();
+
+      expect(valueFor(paths, LABEL)).toBe('centro_20261031180500_DIRECCION.xml');
+      expect(note().textContent).toBe('Publicado el 31/10/2026 18:05 por DIRECCION');
+    });
+
+    test('should say an applied XML is not published yet, and when it will be', async () => {
+      getProjectDetails.mockResolvedValue({
+        success: true,
+        info: { ...INFO, sharedXml: { ...INFO.sharedXml, fileName: null, publishedAt: null, publishedBy: null } }
+      });
+
+      await modal.show();
+
+      expect(valueFor(paths, LABEL)).toBe('Sin publicar');
+      expect(note().textContent).toBe('Se publica al actualizar el XML o al configurar el depósito');
+    });
+
+    test('should read as not configured on a project from before it was recorded', async () => {
+      getProjectDetails.mockResolvedValue({ success: true, info: { ...INFO, sharedXml: null } });
+
+      await modal.show();
+
+      expect(valueFor(paths, LABEL)).toBe('No configurado');
+      expect(note()).toBeNull();
     });
   });
 
