@@ -11,5 +11,6 @@
     { "type": "test", "hidden": true },
     { "type": "build", "hidden": true },
     { "type": "ci", "hidden": true }
-  ]
+  ],
+  "skip": { "tag": true }
 }
