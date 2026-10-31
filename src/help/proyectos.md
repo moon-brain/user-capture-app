@@ -75,7 +75,7 @@ En el apartado **Ubicaciones**:
 |---|---|
 | Carpeta del proyecto | La carpeta que elegiste al crearlo. |
 | Archivo XML | El último XML usado, al crear el proyecto o al actualizarlo. En proyectos antiguos puede aparecer «No configurado». |
-| XML compartido en el depósito | El archivo con el que ese XML está publicado en el depósito para los demás equipos, con la fecha y el equipo que lo publicó. «Sin publicar» si todavía no lo está, y «No configurado» en los proyectos creados antes de la versión 1.25 hasta la siguiente actualización del XML. Ver [El XML compartido con los demás equipos](#el-xml-compartido-con-los-demas-equipos). |
+| XML compartido en el depósito | El archivo con el que ese XML está publicado en el depósito para los demás equipos, con la fecha y el equipo que lo publicó. «Sin publicar» si todavía no lo está, y «No configurado» en los proyectos creados antes de la versión 1.25 hasta la siguiente actualización del XML. Si hay uno más reciente publicado por otro equipo, lo indica en una nota. Ver [El XML compartido con los demás equipos](#el-xml-compartido-con-los-demas-equipos). |
 | Carpeta de entrada (ingest) | La carpeta de la que se recogen las fotos nuevas. Lleva la nota «Personalizada» si la has redirigido, y «No disponible: mientras tanto se usa la carpeta por defecto» si no se encuentra. |
 | Imágenes capturadas (imports) | La carpeta donde se guardan todas las fotos del proyecto. |
 | Base de datos | El archivo con los usuarios, grupos y enlaces. |
@@ -128,7 +128,14 @@ Cada equipo trabaja con su propio proyecto. Para que todos puedan tener el mismo
 - **Solo el XML aplicado**: si el archivo ha cambiado desde que se aplicó, o ya no está, no se publica.
 - **Nada se borra**: los XML anteriores se quedan en `Centro` como historial.
 
-Por ahora la aplicación solo publica. Para usar en otro equipo el XML publicado, ábrelo desde **Proyecto > Actualizar archivo XML** eligiendo el archivo de la carpeta `Centro`.
+### Cuando otro equipo publica un XML más reciente
+
+Al abrir el proyecto, y cada vez que vuelves a la ventana de la aplicación, se mira si en `Centro` hay un XML más reciente que el de tu proyecto. Si lo hay, aparece sobre la lista de usuarios el aviso **XML del centro más reciente**. Pasa el ratón por encima para ver qué equipo lo publicó y cuándo.
+
+- Pulsa el aviso para ver los cambios que aplicaría. Es el mismo análisis de **Proyecto > Actualizar archivo XML**, con una primera línea que dice de dónde viene el XML. No se aplica nada hasta que respondas que sí.
+- Si respondes que no, el aviso sigue ahí y puedes volver a él cuando te venga bien, por ejemplo al acabar una sesión de fotos.
+- Solo se avisa de XML del mismo curso que el proyecto. Si abres a propósito un proyecto de un curso anterior, no se te ofrece el XML del curso nuevo.
+- Sin depósito configurado, o si no está disponible, no aparece ningún aviso.
 
 > **Importante:** las versiones anteriores a la 1.25 no publican. Mientras algún equipo siga con una de ellas, puede haber actualizaciones del XML que no estén en `Centro`.
 

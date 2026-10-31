@@ -49,6 +49,7 @@ describe('ProjectManager', () => {
       onLoadGroups: jest.fn(),
       onLoadUsers: jest.fn(),
       onLoadImages: jest.fn(),
+      onProjectDataLoaded: jest.fn(),
       onGetCurrentFilters: jest.fn(() => ({})),
       onShowInfoModal: jest.fn(),
       onShowConfirmModal: jest.fn(),
@@ -212,6 +213,14 @@ describe('ProjectManager', () => {
       expect(mockConfig.onLoadGroups).toHaveBeenCalled();
       expect(mockConfig.onLoadUsers).toHaveBeenCalled();
       expect(mockConfig.onLoadImages).toHaveBeenCalled();
+    });
+
+    test('should say once everything is loaded, so the shared XML is checked', async () => {
+      await manager.loadProjectData();
+
+      expect(mockConfig.onProjectDataLoaded).toHaveBeenCalledTimes(1);
+      expect(mockConfig.onLoadImages.mock.invocationCallOrder[0])
+        .toBeLessThan(mockConfig.onProjectDataLoaded.mock.invocationCallOrder[0]);
     });
 
     test('should load and apply saved group filter', async () => {
@@ -614,6 +623,41 @@ describe('ProjectManager', () => {
       expect(message).toContain('Usuarios actualizados: 1');
       expect(message).toContain('Usuarios movidos a Eliminados: 1');
       expect(message).toContain('Usuarios eliminados permanentemente: 0');
+    });
+
+    test('should analyse a published XML without asking for a file, saying where it comes from', async () => {
+      mockConfig.getProjectOpen.mockReturnValue(true);
+      mockElectronAPI.updateXML.mockResolvedValue({
+        success: true,
+        changes: { toAdd: 1, toUpdate: 0, toDelete: 0, toDeleteWithImage: 0, toDeleteWithoutImage: 0 },
+        groups: [], newUsersMap: {}, deletedUsers: [], currentUsers: []
+      });
+      mockConfig.onShowConfirmModal.mockResolvedValue(false);
+
+      const promise = manager.handleUpdateXML({
+        filePath: 'G:\\Fotos\\Centro\\centro_20261103090000_PC-FOTOS.xml',
+        source: 'XML del centro publicado en el depósito por PC-FOTOS el 03/11/2026 09:00.'
+      });
+      await jest.runAllTimersAsync();
+      await promise;
+
+      expect(mockElectronAPI.showOpenDialog).not.toHaveBeenCalled();
+      expect(mockElectronAPI.updateXML).toHaveBeenCalledWith('G:\\Fotos\\Centro\\centro_20261103090000_PC-FOTOS.xml');
+      expect(mockConfig.onShowConfirmModal.mock.calls[0][0]).toMatch(
+        /^XML del centro publicado en el depósito por PC-FOTOS el 03\/11\/2026 09:00\.\n\nSe han detectado/
+      );
+      // Declining applies nothing
+      expect(mockElectronAPI.confirmUpdateXML).not.toHaveBeenCalled();
+    });
+
+    test('should ask for the file when the menu passes something that is not a published XML', async () => {
+      mockConfig.getProjectOpen.mockReturnValue(true);
+      mockElectronAPI.showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] });
+
+      await manager.handleUpdateXML({ type: 'click' });
+
+      expect(mockElectronAPI.showOpenDialog).toHaveBeenCalled();
+      expect(mockElectronAPI.updateXML).not.toHaveBeenCalled();
     });
 
     test('should say when the XML could not be shared with the other teams', async () => {

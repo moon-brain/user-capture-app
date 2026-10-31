@@ -210,6 +210,26 @@ describe('ProjectInfoModal', () => {
       expect(note().textContent).toBe('Se publica al actualizar el XML o al configurar el depósito');
     });
 
+    test('should say there is a more recent one, published by another team', async () => {
+      getProjectDetails.mockResolvedValue({
+        success: true,
+        info: {
+          ...INFO,
+          newerSharedXml: {
+            fileName: 'centro_20261103090000_PC-FOTOS.xml',
+            publishedAt: new Date(2026, 10, 3, 9, 0).toISOString(),
+            team: 'PC-FOTOS'
+          }
+        }
+      });
+
+      await modal.show();
+
+      expect(valueFor(paths, LABEL)).toBe('centro_20261031180500_DIRECCION.xml');
+      expect(note().textContent).toBe('Hay uno más reciente, publicado el 03/11/2026 09:00 por PC-FOTOS');
+      expect(note().classList.contains('project-info-note-warning')).toBe(true);
+    });
+
     test('should read as not configured on a project from before it was recorded', async () => {
       getProjectDetails.mockResolvedValue({ success: true, info: { ...INFO, sharedXml: null } });
 

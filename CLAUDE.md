@@ -79,8 +79,8 @@ Versiones instaladas según `package-lock.json`:
   `NOTES.md`)
 - **Probar en Electron real**: `npm run test:smoke` (`scripts/smoke-electron.mjs`)
   abre la aplicación sobre una copia de la muestra de la 1.24.1, pasa por cada
-  biblioteca (base de datos, miniatura, carpeta de entrada, PDF, ZIP, XML y
-  manual) y la cierra como una persona. Abre la ventana: no forma parte de
+  biblioteca (base de datos, miniatura, carpeta de entrada, PDF, ZIP, XML, aviso
+  del XML compartido y manual) y la cierra como una persona. Abre la ventana: no forma parte de
   `npm test`. Es lo que hay que ejecutar tras actualizar Electron o una
   biblioteca, y la CI lo hace en cada push
 - **Empaquetar**: `npm run dist:win`
@@ -676,6 +676,21 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
     crearse), solo si el archivo sigue siendo byte a byte el aplicado.
     **Nunca impide la actualización**: devuelve un `status` que el renderer
     explica (`ProjectManager.describeSharedXml()`)
+  - `publishProjectXml()` es la publicación al configurar el depósito, común
+    al callback del menú en `main.js` (que no pasa por el handler IPC) y a
+    `set-image-repository-path`
+  - **Aviso de un XML más reciente**: `check-shared-xml` (`projectHandlers.js`)
+    llama a `findNewerXml()`: la publicación más reciente **del curso del
+    proyecto** (`readCourse()` lee solo el principio del archivo), posterior a
+    lo aplicado y con otro contenido. Las de otro curso no se ofrecen nunca.
+    Cachea la respuesta un minuto en `state.sharedXmlCheck`, con una clave
+    (proyecto, depósito, hash aplicado, curso) que al cambiar obliga a mirar
+    otra vez; `get-project-details` lee esa caché en lugar de ir a Drive
+  - En el renderer, `SharedXmlNotice` pinta el badge `#shared-xml-alert` y
+    pregunta al cargar el proyecto (`onProjectDataLoaded` de
+    `ProjectManager`), al recuperar el foco y al cambiar el depósito. Pulsarlo
+    llama a `handleUpdateXML({ filePath, source })`: el análisis de siempre,
+    sin diálogo de archivo y con la procedencia en la primera línea
   - Las versiones hasta la 1.24 solo listan `.jpg`/`.jpeg` del primer nivel
     del depósito: no ven `Centro/`
 - **logger.js**: Sistema de logging centralizado. El `app.log` del proyecto se

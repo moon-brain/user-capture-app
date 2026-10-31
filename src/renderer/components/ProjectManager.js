@@ -45,6 +45,7 @@
       this.onClearImages = config.onClearImages || (() => {});
       this.onUpdateLastFilterValue = config.onUpdateLastFilterValue || ((value) => {});
       this.onResetGroupFilterLock = config.onResetGroupFilterLock || (() => {});
+      this.onProjectDataLoaded = config.onProjectDataLoaded || (() => {});
 
       // DOM elements
       this.searchInput = config.searchInput;
@@ -176,6 +177,9 @@
 
       // Update placeholder visibility
       this.updateNoProjectPlaceholder();
+
+      // Every opening, creation and XML update ends here
+      this.onProjectDataLoaded();
     }
 
     /**
@@ -195,26 +199,37 @@
 
     /**
      * Handle XML update flow
+     *
+     * From the menu it asks for the file. The notice of a more recent XML in
+     * the repository passes the published one, with a line saying where it
+     * comes from; from there it is the same analysis and confirmation.
+     *
+     * @param {Object} [published] - { filePath, source } of a published XML
      * @returns {Promise<void>}
      */
-    async handleUpdateXML() {
+    async handleUpdateXML(published = null) {
       if (!this.getProjectOpen()) {
         this.onShowInfoModal('Aviso', 'Debes abrir o crear un proyecto primero');
         return;
       }
 
-      // Select new XML file
-      const result = await this.electronAPI.showOpenDialog({
-        properties: ['openFile'],
-        filters: [{ name: 'XML Files', extensions: ['xml'] }],
-        title: 'Seleccionar nuevo archivo XML'
-      });
+      let xmlPath;
+      if (published && typeof published.filePath === 'string') {
+        xmlPath = published.filePath;
+      } else {
+        // Select new XML file
+        const result = await this.electronAPI.showOpenDialog({
+          properties: ['openFile'],
+          filters: [{ name: 'XML Files', extensions: ['xml'] }],
+          title: 'Seleccionar nuevo archivo XML'
+        });
 
-      if (result.canceled || result.filePaths.length === 0) {
-        return;
+        if (result.canceled || result.filePaths.length === 0) {
+          return;
+        }
+
+        xmlPath = result.filePaths[0];
       }
-
-      const xmlPath = result.filePaths[0];
 
       // Show progress modal
       this.onShowProgressModal('Actualizando XML', 'Analizando cambios...');
@@ -244,6 +259,10 @@
       if (current && incoming && current !== incoming) {
         message += `⚠ Este XML es del curso ${incoming}-${incoming + 1} y el proyecto es del curso ${current}-${current + 1}.\n`;
         message += 'Para empezar un curso nuevo, lo habitual es crear un proyecto nuevo con su XML.\n\n';
+      }
+
+      if (published && published.source) {
+        message += `${published.source}\n\n`;
       }
 
       message += 'Se han detectado los siguientes cambios:\n\n';

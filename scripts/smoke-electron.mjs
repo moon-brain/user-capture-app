@@ -229,6 +229,21 @@ async function main() {
       return 'analysed (not applied)';
     });
 
+    // Another team published a more recent roll of the same course in the
+    // repository set above: the badge above the list has to say so
+    await check('shared XML: shows the notice of a more recent one', async () => {
+      const centro = path.join(repository, 'Centro');
+      fs.mkdirSync(centro);
+      const fileName = 'centro_20260115090000_OTROEQUIPO.xml';
+      fs.copyFileSync(path.join(work, 'XML', 'centro_2025_enero.xml'), path.join(centro, fileName));
+      const found = await cdp.evaluate('sharedXmlNotice.check().then((newer) => newer && newer.fileName)');
+      if (found !== fileName) throw new Error(`found ${found}`);
+      await waitFor('the badge', () => cdp.evaluate(
+        "getComputedStyle(document.getElementById('shared-xml-alert')).display !== 'none'"
+      ), 5000);
+      return fileName;
+    });
+
     await check('markdown-it: renders a manual page', async () => {
       const { pages } = await api('helpGetPages()');
       const first = pages[0];

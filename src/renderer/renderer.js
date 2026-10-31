@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize project manager
   initializeProjectManager();
+  initializeSharedXmlNotice();
 
   initializeEventListeners();
   // Defer camera detection to not block UI
@@ -1037,6 +1038,22 @@ function initializeUserDataManager() {
 
 }
 
+// Notice of a more recent school XML published by another team
+let sharedXmlNotice = null;
+
+function initializeSharedXmlNotice() {
+  sharedXmlNotice = new SharedXmlNotice({
+    badge: document.getElementById('shared-xml-alert'),
+    getProjectOpen: () => projectOpen,
+    onUpdate: (published) => projectManager.handleUpdateXML(published)
+  });
+  sharedXmlNotice.init();
+
+  // Another team may publish while this one works: look again on coming back
+  // to the window (the main process reads Centro once a minute at most)
+  window.addEventListener('focus', () => sharedXmlNotice.check());
+}
+
 function initializeProjectManager() {
   projectManager = new ProjectManager({
     // State setters
@@ -1044,6 +1061,7 @@ function initializeProjectManager() {
       projectOpen = value;
       applyUsersViewMode();
       updateIncomingRotationBadge();
+      if (!value && sharedXmlNotice) sharedXmlNotice.hide();
     },
     setCurrentUsers: (users) => { currentUsers = users; },
     setAllUsers: (users) => { allUsers = users; },
@@ -1067,6 +1085,7 @@ function initializeProjectManager() {
     onCloseProgressModal: closeProgressModal,
     onUpdateLastFilterValue: updateLastFilterValue,
     onResetGroupFilterLock: resetGroupFilterLock,
+    onProjectDataLoaded: () => { if (sharedXmlNotice) sharedXmlNotice.check(); },
 
     // DOM elements
     searchInput: searchInput,
@@ -1342,6 +1361,8 @@ function initializeEventListeners() {
   window.electronAPI.onRepositoryPathChanged(async () => {
     // Update status bar to reflect the new repository path
     await updateStatusBar();
+    // The new repository may hold a more recent school XML
+    if (sharedXmlNotice) sharedXmlNotice.check();
   });
 
   // About modal

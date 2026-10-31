@@ -1471,6 +1471,13 @@ function registerMiscHandlers(context) {
           }
         : null;
 
+      // A more recent one in Centro, from the last check (check-shared-xml);
+      // not looked for here, the modal should not wait on the drive
+      const lastCheck = state.sharedXmlCheck;
+      const newerSharedXml = lastCheck && lastCheck.key.startsWith(`${projectPath}|`) && lastCheck.result.newer
+        ? lastCheck.result.newer
+        : null;
+
       // The captures live on disk, not in the database
       const capturedImages = state.imageManager
         ? (await state.imageManager.getImages()).length
@@ -1490,6 +1497,7 @@ function registerMiscHandlers(context) {
           projectPath,
           xmlFilePath: xmlFilePath || null,
           sharedXml,
+          newerSharedXml,
           ingestPath,
           configuredIngestPath,
           ingestIsCustom: Boolean(configuredIngestPath),

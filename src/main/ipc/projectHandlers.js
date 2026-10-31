@@ -10,9 +10,13 @@ const DatabaseManager = require('../database');
 const XMLParser = require('../xmlParser');
 const ImageManager = require('../imageManager');
 const { startIngestWatcher } = require('../ingestFolder');
-const { parseAcademicYear } = require('../academicYear');
+const { parseAcademicYear, academicYearOn } = require('../academicYear');
 const { getImageRepositoryPath } = require('../utils/config');
-const { hashXml, setAppliedXml, publishAppliedXml } = require('../sharedXml');
+const { hashXml, setAppliedXml, getAppliedXml, publishAppliedXml, findNewerXml } = require('../sharedXml');
+
+// Centro is looked at on opening and when the window gets the focus back, so
+// this keeps it to a readdir a minute at most over a synced drive
+const SHARED_XML_CHECK_INTERVAL = 60 * 1000;
 
 /**
  * Record the XML a project has just applied, so it can be published to the
@@ -864,6 +868,61 @@ function registerProjectHandlers(context) {
       logger.error('Error applying XML update', error);
       // It may have stopped halfway, with some users already changed
       notifyGroupCoverage();
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Is there a more recent school XML in the repository's Centro folder?
+  // (docs/XML_COMPARTIDO_PLAN.md, 3.3). Never applies anything: the renderer
+  // shows a notice and the update goes through the usual analysis.
+  ipcMain.handle('check-shared-xml', async () => {
+    try {
+      if (!state.dbManager || !state.projectPath) {
+        return { success: false, error: 'No hay ningún proyecto abierto' };
+      }
+
+      const repositoryPath = await getImageRepositoryPath(state.dbManager);
+      if (!repositoryPath) {
+        return { success: true, newer: null, reason: 'no-repository' };
+      }
+
+      const applied = await getAppliedXml(state.dbManager);
+      const academicYear = parseAcademicYear(await state.dbManager.getProjectSetting('academicYear'))
+        || academicYearOn(new Date());
+
+      // Anything that changes the answer starts a new minute
+      const key = [state.projectPath, repositoryPath, applied ? applied.hash : '', academicYear].join('|');
+      const cached = state.sharedXmlCheck;
+      if (cached && cached.key === key && Date.now() - cached.at < SHARED_XML_CHECK_INTERVAL) {
+        return cached.result;
+      }
+
+      let result;
+      if (!fs.existsSync(repositoryPath)) {
+        result = { success: true, newer: null, reason: 'repository-unavailable' };
+      } else {
+        // Projects from before 1.25 never recorded what they applied: compare
+        // with the file they last read, if it is still there
+        let currentHash = null;
+        if (!applied) {
+          const xmlPath = await state.dbManager.getProjectSetting('xmlFilePath');
+          try {
+            if (xmlPath) currentHash = hashXml(fs.readFileSync(xmlPath));
+          } catch {
+            // Gone: anything published counts as different
+          }
+        }
+        const newer = await findNewerXml({ repositoryPath, academicYear, applied, currentHash });
+        result = { success: true, newer };
+        if (newer) {
+          logger.info(`A more recent school XML is in the repository: ${newer.fileName}`);
+        }
+      }
+
+      state.sharedXmlCheck = { key, at: Date.now(), result };
+      return result;
+    } catch (error) {
+      logger.error('Error checking the shared school XML', error);
       return { success: false, error: error.message };
     }
   });
