@@ -43,17 +43,17 @@ que la usen otros centros.** Implica:
 ## Stack
 
 Versiones instaladas según `package-lock.json`:
-- **Electron 44.3.0**, JavaScript CommonJS sin TypeScript ni bundler
-- **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.34.4** (imágenes)
-- **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.3** (XML)
-- **pdfkit 0.17.2** (PDF), **archiver 7.0.1** (ZIP), **markdown-it 15.0.2** (manual)
-- **electron-updater 6.8.9** y **electron-builder 26.15.3** (instalador NSIS
+- **Electron 44.10.0**, JavaScript CommonJS sin TypeScript ni bundler
+- **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.34.5** (imágenes)
+- **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.7** (XML)
+- **pdfkit 0.17.2** (PDF), **archiver 7.0.1** (ZIP), **markdown-it 15.0.3** (manual)
+- **electron-updater 6.8.11** y **electron-builder 26.18.0** (instalador NSIS
   y actualizaciones desde GitHub Releases)
 - **Jest 29.7.0** con `jest-environment-jsdom` (tests)
-- **commit-and-tag-version 13.2.0** (versión y CHANGELOG)
+- **commit-and-tag-version 13.3.0** (versión y CHANGELOG)
 - Auxiliar de recibos en **C#**, compilado con el `csc` de .NET Framework 4.x
   que trae Windows
-- En ejecución, la aplicación usa el Node que lleva Electron 44 (24.20.0,
+- En ejecución, la aplicación usa el Node que lleva Electron 44 (24.22.1,
   Chromium 152), no el del sistema
 - Para desarrollar hace falta **Node ≥ 22.12**: lo exigen `electron`
   (`>= 22.12.0`) y `commit-and-tag-version` (`>= 22`) en su campo `engines`.
