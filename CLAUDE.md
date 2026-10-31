@@ -1757,8 +1757,15 @@ manual que le corresponde.
 siguiente `npm run release`, en todas las instalaciones. Por eso **no se hace
 commit ni push directamente a `main`**; GitHub lo impide (regla de rama).
 
+Los comandos van en líneas separadas: la terminal es Windows PowerShell 5.1,
+que no entiende `&&` (llegó en PowerShell 7).
+
 1. **Una rama corta por cambio**, desde `main` al día:
-   `git switch main && git pull && git switch -c fix/foto-al-actualizar-xml`.
+   ```
+   git switch main
+   git pull
+   git switch -c fix/foto-al-actualizar-xml
+   ```
    Prefijo como el tipo del commit (`feat/`, `fix/`, `refactor/`, `docs/`,
    `chore/`, `ci/`...), nombre en minúsculas con guiones. Corta: días, no
    semanas; lo largo se parte en pasos que se puedan fusionar
@@ -1770,8 +1777,8 @@ commit ni push directamente a `main`**; GitHub lo impide (regla de rama).
    tests y la prueba en Electron real; sin CI en verde no se puede fusionar
 5. **Fusionar con «Rebase and merge»** (`gh pr merge --rebase --delete-branch`),
    el único método permitido: cada commit llega a `main` tal cual, sin commit
-   de merge, y cada uno da su línea del CHANGELOG. Después,
-   `git switch main && git pull` y borrar la rama local (`git branch -d`)
+   de merge, y cada uno da su línea del CHANGELOG. Con `--delete-branch`, `gh`
+   ya vuelve a `main`, hace el pull y borra la rama local y la remota
 6. **Publicar** es aparte, con su propio pull request: ver «Versionado y
    publicación»
 

@@ -23,7 +23,7 @@ el porqué, el diseño del actualizador y cómo se llega desde el estado actual.
 |---|---|
 | Node 22.12 o superior (lo exige `electron@44`) | `node --version` |
 | Sesión de `gh` con permiso `repo` | `gh auth status` |
-| `main` al día y todo lo que va en la versión ya fusionado | `git switch main && git pull`; `git status -sb` debe decir `## main...origin/main` sin `ahead`/`behind` |
+| `main` al día y todo lo que va en la versión ya fusionado | `git switch main`, `git pull`; `git status -sb` debe decir `## main...origin/main` sin `ahead`/`behind` |
 | La CI de `main` en verde | `gh run list --branch main --limit 1` |
 | Tests en verde | `npm test` |
 | La aplicación arranca y abre el proyecto reciente | `npm run dev`, **y ciérrala después**: abierta con `--dev` bloquea los `.asar` de `dist/` y el empaquetado falla con `EBUSY` (ver 1.8) |
@@ -54,8 +54,11 @@ Si el resultado no es el deseado se fuerza con `--release-as minor`,
 `main` no admite commits directos (ver «Flujo de git» en `CLAUDE.md`), así
 que la versión también entra por pull request:
 
+Una orden por línea: en Windows PowerShell 5.1 no existe `&&`.
+
 ```
-git switch main && git pull
+git switch main
+git pull
 git switch -c release/X.Y.Z  # la versión que dijo el --dry-run
 npm run release              # versión calculada de los commits
 npm run release:minor        # o forzar minor
@@ -69,15 +72,17 @@ Esto, y nada más que esto:
 3. Hace el commit `chore(release): X.Y.Z`.
 
 **No crea el tag** (`.versionrc.json`, `skip.tag`). Revisa `CHANGELOG.md`; si
-algo está mal, se deshace con `git switch main && git branch -D release/X.Y.Z`
-y se vuelve a empezar. Si está bien:
+algo está mal, se deshace con `git switch main` y luego
+`git branch -D release/X.Y.Z`, y se vuelve a empezar. Si está bien:
 
 ```
 git push -u origin HEAD
 gh pr create --fill
 gh pr merge --rebase --delete-branch     # cuando la CI esté en verde
-git switch main && git pull && git branch -D release/X.Y.Z
 ```
+
+El último comando ya deja la terminal en `main` al día y borra la rama, la
+local y la de GitHub.
 
 El tag no se crea en la rama porque «Rebase and merge» reescribe el commit: un
 tag hecho antes apuntaría a un commit que `main` no tiene. Lo crea el paso
