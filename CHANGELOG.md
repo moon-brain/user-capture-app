@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.25.0](https://github.com/moon-brain/user-capture-app/compare/v1.24.1...v1.25.0) (2026-10-31)
+
+### Features
+
+* notice a more recent school XML published by another team ([657fff6](https://github.com/moon-brain/user-capture-app/commit/657fff63c7ba3828882f4ac8ca14b26221fab896))
+* share the applied school XML through the repository's Centro folder ([af8b460](https://github.com/moon-brain/user-capture-app/commit/af8b460e28cb53f6a10a03b98c08220a53ff8875))
+
+### Bug Fixes
+
+* always remove the temporary folder of the ZIP image export ([89d33c8](https://github.com/moon-brain/user-capture-app/commit/89d33c8c90b765209fc14ffba4e26f53694c288b))
+* decode numeric character references in the school XML ([a491c4e](https://github.com/moon-brain/user-capture-app/commit/a491c4e3b3522af01fb0ce533747aaf66bd9cd16))
+* **deps:** bump fast-xml-parser from 4.5.7 to 5.11.2 ([6576d88](https://github.com/moon-brain/user-capture-app/commit/6576d88ce3fa88249d8783ad56347a353e474476))
+* **deps:** store projects with node:sqlite instead of the archived sqlite3 ([c9a6222](https://github.com/moon-brain/user-capture-app/commit/c9a622269ecf8c35a7ac85bd740a56c67c7ebe66))
+* **deps:** update pdfkit to 0.20.2 ([10e32fd](https://github.com/moon-brain/user-capture-app/commit/10e32fde05493d8363933779b72a92a42912eef5))
+* **deps:** update sharp to 0.35.5 for the libvips security fixes ([30d7406](https://github.com/moon-brain/user-capture-app/commit/30d7406b8ff415ca4f79cbe6e51321ffa6cc9c92))
+* report PDF exports to a missing folder instead of hanging ([6f658fc](https://github.com/moon-brain/user-capture-app/commit/6f658fc065cbc95986769d09ad3cfc41c8e56731))
+
 ## [1.24.1](https://github.com/moon-brain/user-capture-app/compare/v1.24.0...v1.24.1) (2026-10-09)
 
 ### Bug Fixes

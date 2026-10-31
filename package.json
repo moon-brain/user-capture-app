@@ -2,7 +2,7 @@
   "name": "edu-user-capture-app",
   "appId": "com.eduusercapture.app",
   "productName": "Edu User Capture",
-  "version": "1.24.1",
+  "version": "1.25.0",
   "description": "Edu User Capture - Aplicación de captura de imágenes de usuarios",
   "private": true,
   "main": "main.js",
