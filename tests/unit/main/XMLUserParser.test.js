@@ -424,4 +424,41 @@ describe('XMLUserParser', () => {
       expect(result.first_name).toBe('Ana\nMaría');
     });
   });
+
+  // The shared Centro folder lets any team drop an XML that every other team
+  // will parse, so a file built to hurt the parser must not be read
+  describe('untrusted files', () => {
+    const STUDENT = '<alumnos><alumno nombre="Ana" apellido1="Gil" NIA="1001" grupo="1A"/></alumnos>';
+
+    test('should reject a DOCTYPE before parsing anything', async () => {
+      const billionLaughs = '<?xml version="1.0"?>' +
+        '<!DOCTYPE centro [<!ENTITY a "jaja"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]>' +
+        `<centro>${STUDENT.replace('Ana', '&b;')}</centro>`;
+
+      await expect(parseXml(billionLaughs)).rejects.toThrow(/DOCTYPE/);
+    });
+
+    test('should reject a DOCTYPE written in lower case', async () => {
+      await expect(parseXml(`<?xml version="1.0"?><!doctype centro><centro>${STUDENT}</centro>`))
+        .rejects.toThrow(/DOCTYPE/);
+    });
+
+    test('should accept the word DOCTYPE inside a comment or a CDATA section', async () => {
+      const result = await parseXml('<?xml version="1.0"?><!-- sin <!DOCTYPE --><centro>' +
+        `<nota><![CDATA[<!DOCTYPE x>]]></nota>${STUDENT}</centro>`);
+
+      expect(result.students).toHaveLength(1);
+    });
+
+    test('should reject a file far larger than any school XML, without reading it', async () => {
+      testId++;
+      const filePath = path.join(fixturesPath, `enorme-${testId}.xml`);
+      fs.writeFileSync(filePath, '');
+      fs.truncateSync(filePath, XMLUserParser.MAX_XML_BYTES + 1);
+      const read = jest.spyOn(fs, 'readFileSync');
+
+      await expect(new XMLUserParser(filePath).parse()).rejects.toThrow(/MB/);
+      expect(read).not.toHaveBeenCalled();
+    });
+  });
 });

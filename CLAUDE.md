@@ -234,6 +234,7 @@ user-capture-app/
 │   │   ├── receiptPrinter.js    # Impresión de recibos con el auxiliar de Windows (native/receipt-printer)
 │   │   ├── replacedArchive.js   # Carpeta Reemplazadas del depósito: leerla y purgarla
 │   │   ├── repositoryMirror.js  # Copia local de la carpeta del depósito
+│   │   ├── sharedXml.js         # XML del centro publicado en la carpeta Centro del depósito
 │   │   ├── updateManager.js     # Envoltorio de electron-updater (comprobar, descargar, instalar)
 │   │   ├── workspaces.js        # Espacios de trabajo: combinaciones guardadas de las opciones de Ver
 │   │   ├── xmlParser.js         # Parseo de archivos XML de usuarios
@@ -654,6 +655,29 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
   con `decodeCharacterReferences()`: fast-xml-parser solo lo hace junto con
   las entidades HTML. `identifierKey()` de `projectHandlers.js` también las
   decodifica, para que una actualización reconozca a quien se guardó con ellas
+  - Rechaza, antes de analizar, un archivo de más de `MAX_XML_BYTES` (20 MB)
+    y uno con `<!DOCTYPE` fuera de comentarios y CDATA (`hasDoctype()`): es
+    como se declaran entidades, y fast-xml-parser 5 aún expande un «billion
+    laughs» pequeño. El XML de la gestión del centro no lo lleva
+- **sharedXml.js**: el XML del centro compartido por el depósito (plan en
+  `docs/XML_COMPARTIDO_PLAN.md`). Se comparte el origen, nunca el `.sqlite`
+  - Cada publicación es un archivo nuevo en `Centro/`,
+    `centro_<AAAAMMDDHHMMSS>_<equipo>.xml`, escrito con nombre temporal que
+    no acaba en `.xml` y renombrado. Nunca se sobrescribe ni se borra nada
+  - La identidad es el SHA-256 del contenido: un XML que ya está (lo publicase
+    quien lo publicase) no se vuelve a publicar. `findPublished()` solo lee
+    los de igual tamaño, porque leer de Drive es lo que cuesta
+  - `project_settings` guarda bajo `sharedXml` lo aplicado (`{ hash,
+    fileName, appliedAt }`, en JSON); sin clave, proyecto anterior a la 1.25.
+    Lo escriben `create-project` y `confirm-update-xml` con los bytes leídos
+    al analizar
+  - `publishAppliedXml()` publica tras `confirm-update-xml` y en
+    `set-image-repository-path` (un proyecto nuevo no tiene depósito al
+    crearse), solo si el archivo sigue siendo byte a byte el aplicado.
+    **Nunca impide la actualización**: devuelve un `status` que el renderer
+    explica (`ProjectManager.describeSharedXml()`)
+  - Las versiones hasta la 1.24 solo listan `.jpg`/`.jpeg` del primer nivel
+    del depósito: no ven `Centro/`
 - **logger.js**: Sistema de logging centralizado. El `app.log` del proyecto se
   corta al llegar a 5 MB y se conservan los dos anteriores (`app.1.log` y
   `app.2.log`): antes cada apertura añadía al mismo archivo y nunca se

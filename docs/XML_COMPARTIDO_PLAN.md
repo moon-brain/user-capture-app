@@ -1,6 +1,7 @@
 # XML del centro compartido por el depósito
 
-Estado: **plan, sin implementar**. Decisiones tomadas el 2026-10-31.
+Estado: **fases 1 y 4 implementadas** (2026-10-31, rama `feat/shared-xml-publish`);
+faltan las fases 2 y 3. Decisiones tomadas el 2026-10-31.
 
 ## 1. Problema
 
@@ -64,8 +65,13 @@ respetan, y dos equipos escribiendo a la vez la corromperían.
 
 ### 3.2 Cuándo se publica
 
-- Al terminar bien `confirm-update-xml` y al crear un proyecto, **si hay
+- Al terminar bien `confirm-update-xml` y al configurar el depósito, **si hay
   depósito configurado y disponible** y si ese hash no está ya en `Centro/`.
+  Al crear un proyecto solo se anota lo aplicado: el depósito es un ajuste
+  del proyecto y uno recién creado no lo tiene, así que su XML se publica al
+  configurárselo (cambio sobre el plan inicial, que decía «al crear»).
+- Solo se publica si el archivo sigue siendo, byte a byte, el que se aplicó
+  (el hash anotado): pudo editarse o sustituirse después.
 - Si el depósito no está disponible, se actualiza igual y se avisa de que no
   se ha publicado. La publicación nunca impide actualizar.
 
@@ -186,13 +192,15 @@ Cada fase actualiza el manual (`src/help/`) en el mismo commit.
 
 0. **Garantías** (sección 5). ✅ 2026-10-31: inventario, redirección y tests
    de compatibilidad (5.3).
-1. **Publicar**: al actualizar y al crear, con hash y `sharedXml`. Sin aviso
-   todavía; lo único visible es la línea de **Información del proyecto**.
+1. **Publicar**: al actualizar y al configurar el depósito, con hash y
+   `sharedXml`. Sin aviso todavía; lo visible es la línea de **Información
+   del proyecto** y una frase en el mensaje final de la actualización. ✅
+   2026-10-31 (`sharedXml.js`).
 2. **Avisar** en los demás equipos (3.3 y 3.4).
 3. **Aplicar desde el aviso**, reutilizando `update-xml` y
    `confirm-update-xml` con la ruta del archivo publicado.
-4. **Rechazo de DOCTYPE y límite de tamaño** (sección 6). Puede ir con la
-   fase 1.
+4. **Rechazo de DOCTYPE y límite de tamaño** (sección 6). ✅ 2026-10-31,
+   con la fase 1: `<!DOCTYPE` fuera de comentarios y CDATA, y 20 MB.
 
 Encaje con el plan de dependencias en curso: la fase 0 va después del test de
 dependencias (paso 2) y antes de los saltos de versión mayor, porque los tests
@@ -200,6 +208,7 @@ de compatibilidad los protegen.
 
 ## 8. Pendiente de decidir
 
-- Si el nombre `Centro/` vale o se prefiere otro.
+- Si el nombre `Centro/` vale o se prefiere otro. Implementado con `Centro/`
+  (`SHARED_XML_FOLDER`); cambiarlo antes de publicar la 1.25 es una línea.
 - Si hace falta una purga manual de los XML antiguos, como la de
   `Reemplazadas`. Con un XML por actualización, crecerá muy despacio.

@@ -11,6 +11,24 @@ const XMLParser = require('../xmlParser');
 const ImageManager = require('../imageManager');
 const { startIngestWatcher } = require('../ingestFolder');
 const { parseAcademicYear } = require('../academicYear');
+const { getImageRepositoryPath } = require('../utils/config');
+const { hashXml, setAppliedXml, publishAppliedXml } = require('../sharedXml');
+
+/**
+ * Record the XML a project has just applied, so it can be published to the
+ * repository's Centro folder and recognised there (sharedXml.js)
+ *
+ * @param {Object} dbManager
+ * @param {Buffer} content - the file's bytes, read when it was parsed
+ * @returns {Promise<void>}
+ */
+async function recordAppliedXml(dbManager, content) {
+  await setAppliedXml(dbManager, {
+    hash: hashXml(content),
+    fileName: null,
+    appliedAt: new Date().toISOString()
+  });
+}
 
 /**
  * Identifier as the XML update compares it
@@ -100,6 +118,9 @@ function registerProjectHandlers(context) {
       // open project untouched and no half-made project in the folder
       logger.section('PARSING XML FILE');
       logger.info(`Reading XML file: ${xmlPath}`);
+      // Kept to record what was applied; read before parsing, so it is the
+      // file the parser sees
+      const xmlContent = fs.readFileSync(xmlPath);
       const xmlParser = new XMLParser(xmlPath);
       const users = await xmlParser.parse();
 
@@ -161,6 +182,8 @@ function registerProjectHandlers(context) {
       // Remembered so the project information can report where the users came
       // from; nothing else recorded it
       await state.dbManager.setProjectSetting('xmlFilePath', xmlPath);
+      // Published once the project has a repository: a new one has none yet
+      await recordAppliedXml(state.dbManager, xmlContent);
 
       // Card print and publication requests are dated against it
       if (users.academicYear) {
@@ -757,6 +780,27 @@ function registerProjectHandlers(context) {
         await state.dbManager.setProjectSetting('xmlFilePath', xmlPath);
       }
 
+      // Shared with the other teams through the repository. Never stops the
+      // update: what happened goes back to the renderer, which mentions it.
+      let sharedXml = { status: 'not-applied' };
+      if (xmlPath) {
+        try {
+          await recordAppliedXml(state.dbManager, fs.readFileSync(xmlPath));
+          sharedXml = await publishAppliedXml({
+            dbManager: state.dbManager,
+            repositoryPath: await getImageRepositoryPath(state.dbManager),
+            xmlPath
+          });
+        } catch (error) {
+          sharedXml = { status: 'failed', error: error.message };
+        }
+        if (sharedXml.status === 'published') {
+          logger.success(`School XML published to the repository as ${sharedXml.fileName}`);
+        } else {
+          logger.info(`School XML not published: ${sharedXml.status}`, sharedXml.error ? { error: sharedXml.error } : undefined);
+        }
+      }
+
       // The course follows the roll. An XML without one leaves it as it was.
       const incomingYear = parseAcademicYear(academicYear);
       if (incomingYear) {
@@ -813,7 +857,8 @@ function registerProjectHandlers(context) {
           updated: totalProcessed,
           movedToDeleted,
           permanentlyDeleted
-        }
+        },
+        sharedXml
       };
     } catch (error) {
       logger.error('Error applying XML update', error);

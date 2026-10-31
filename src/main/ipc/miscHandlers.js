@@ -6,6 +6,7 @@ const { ipcMain, dialog } = require('electron');
 const path = require('path');
 const { getActiveIngestPath, getConfiguredIngestPath } = require('../ingestFolder');
 const { getLastExportFolder, setLastExportFolder, getUpdatePreferences, saveUpdatePreferences, isOrlaServiceEnabled, normalizeExportDefaults, getExportDefaults } = require('../utils/config');
+const { publishAppliedXml, getAppliedXml, parsePublishedName } = require('../sharedXml');
 const { getImageRepositoryPath, setImageRepositoryPath, getSelectedGroupFilter, setSelectedGroupFilter, loadGlobalConfig, saveGlobalConfig } = require('../utils/config');
 const VersionManager = require('../utils/version');
 const { listRequestFolder, projectRequests, reviewRequests, archiveRequests, stampRequest } = require('../pendingRequests');
@@ -145,7 +146,17 @@ function registerMiscHandlers(context) {
         logger.info(`Repository path changed to: ${repositoryPath}`);
         await reinitializeRepositoryMirror();
         logger.success('Repository mirror reinitialized with new path');
-        return { success: true };
+
+        // A new project gets its repository after it is created, so this is
+        // when its XML can be shared; also when moving to another repository
+        const sharedXml = await publishAppliedXml({
+          dbManager: state.dbManager,
+          repositoryPath,
+          xmlPath: await state.dbManager.getProjectSetting('xmlFilePath')
+        });
+        logger.info(`School XML on repository change: ${sharedXml.status}`, sharedXml.fileName || sharedXml.error || null);
+
+        return { success: true, sharedXml };
       } else {
         return { success: false, error: 'No se pudo guardar la configuración' };
       }
@@ -1452,6 +1463,18 @@ function registerMiscHandlers(context) {
       // never stored it, so the modal has to cope with it being missing
       const xmlFilePath = await state.dbManager.getProjectSetting('xmlFilePath');
 
+      // The XML shared with the other teams, if this one has been published
+      const applied = await getAppliedXml(state.dbManager);
+      const publication = applied && applied.fileName ? parsePublishedName(applied.fileName) : null;
+      const sharedXml = applied
+        ? {
+            appliedAt: applied.appliedAt || null,
+            fileName: applied.fileName,
+            publishedAt: publication ? publication.publishedAt.toISOString() : null,
+            publishedBy: publication ? publication.team : null
+          }
+        : null;
+
       // The captures live on disk, not in the database
       const capturedImages = state.imageManager
         ? (await state.imageManager.getImages()).length
@@ -1470,6 +1493,7 @@ function registerMiscHandlers(context) {
           name: path.basename(projectPath),
           projectPath,
           xmlFilePath: xmlFilePath || null,
+          sharedXml,
           ingestPath,
           configuredIngestPath,
           ingestIsCustom: Boolean(configuredIngestPath),

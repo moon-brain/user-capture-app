@@ -616,6 +616,31 @@ describe('ProjectManager', () => {
       expect(message).toContain('Usuarios eliminados permanentemente: 0');
     });
 
+    test('should say when the XML could not be shared with the other teams', async () => {
+      mockConfig.getProjectOpen.mockReturnValue(true);
+      mockElectronAPI.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/path/to/new.xml'] });
+      mockElectronAPI.updateXML.mockResolvedValue({
+        success: true,
+        changes: { toAdd: 0, toUpdate: 1, toDelete: 0, toDeleteWithImage: 0, toDeleteWithoutImage: 0 },
+        groups: [], newUsersMap: {}, deletedUsers: [], currentUsers: []
+      });
+      mockConfig.onShowConfirmModal.mockResolvedValue(true);
+      mockElectronAPI.confirmUpdateXML.mockResolvedValue({
+        success: true,
+        results: { added: 0, updated: 1, movedToDeleted: 0, permanentlyDeleted: 0 },
+        sharedXml: { status: 'repository-unavailable' }
+      });
+      mockElectronAPI.getSelectedGroupFilter.mockResolvedValue({ success: false });
+
+      const promise = manager.handleUpdateXML();
+      await jest.runAllTimersAsync();
+      await promise;
+
+      expect(mockConfig.onShowInfoModal.mock.calls[0][1]).toContain(
+        'El XML no se ha publicado para los demás equipos: el depósito no está disponible.'
+      );
+    });
+
     test('should show error if update application fails', async () => {
       mockConfig.getProjectOpen.mockReturnValue(true);
       mockElectronAPI.showOpenDialog.mockResolvedValue({
@@ -644,6 +669,30 @@ describe('ProjectManager', () => {
         'Error',
         'Error al aplicar cambios: Database error'
       );
+    });
+  });
+
+  describe('describeSharedXml()', () => {
+    const describe_ = (sharedXml) => ProjectManager.describeSharedXml(sharedXml);
+
+    test.each([
+      ['published', 'El XML se ha publicado en el depósito para los demás equipos.'],
+      ['already', 'Este XML ya estaba publicado en el depósito.'],
+      ['no-repository', 'El XML no se ha publicado para los demás equipos: el proyecto no tiene depósito configurado.'],
+      ['repository-unavailable', 'El XML no se ha publicado para los demás equipos: el depósito no está disponible.'],
+      ['changed', 'El XML no se ha publicado para los demás equipos: el archivo ha cambiado desde que se analizó.']
+    ])('should explain %s', (status, text) => {
+      expect(describe_({ status })).toBe(text);
+    });
+
+    test('should pass on why writing failed', () => {
+      expect(describe_({ status: 'failed', error: 'EACCES: permission denied' }))
+        .toBe('El XML no se ha publicado para los demás equipos: EACCES: permission denied.');
+    });
+
+    test('should say nothing when there is nothing to say', () => {
+      expect(describe_(undefined)).toBeNull();
+      expect(describe_({ status: 'not-applied' })).toBeNull();
     });
   });
 

@@ -45,6 +45,7 @@ const config = require('../../../src/main/utils/config');
 const recentProjects = require('../../../src/main/utils/recentProjects');
 const ingestFolder = require('../../../src/main/ingestFolder');
 const { WorkspaceStore } = require('../../../src/main/workspaces');
+const { getAppliedXml } = require('../../../src/main/sharedXml');
 
 const FIXTURES = path.join(__dirname, '..', '..', 'fixtures', 'compat');
 
@@ -233,6 +234,8 @@ describe.each(Object.entries(VERSIONS))('project and config.json written by %s',
     expect(await ingestFolder.getIncomingRotation(state.dbManager)).toBe(settings.incomingRotation);
     expect(state.incomingRotation).toBe(settings.incomingRotation);
     expect(await state.dbManager.getProjectSetting('academicYear')).toBe(settings.academicYear);
+    // Never recorded what it applied: nothing to publish until its next update
+    expect(await getAppliedXml(state.dbManager)).toBeNull();
     if (settings.xmlFilePath) {
       expect(await state.dbManager.getProjectSetting('xmlFilePath')).toMatch(settings.xmlFilePath);
     } else {
@@ -281,6 +284,12 @@ describe.each(Object.entries(VERSIONS))('project and config.json written by %s',
   test('should keep links, payments and tags through an XML update', async () => {
     const marta = byId(await users())[expected.martaNia];
 
+    // The fixture's repository is on G:, which on a developer's machine is
+    // the real Google Drive; this publishes the XML, so it goes to a copy
+    const repositoryPath = path.join(projectPath, '..', 'Depósito fotos');
+    fs.mkdirSync(repositoryPath, { recursive: true });
+    await state.dbManager.setProjectSetting('imageRepositoryPath', repositoryPath);
+
     // The roll from September again: Iñaki is back and Joan is not in it
     const analysis = await invoke('update-xml', path.join(xmlFolder, 'centro_2025.xml'));
     expect(analysis).toMatchObject({ success: true });
@@ -293,6 +302,9 @@ describe.each(Object.entries(VERSIONS))('project and config.json written by %s',
       academicYear: analysis.academicYear?.incoming ?? null
     });
     expect(applied).toMatchObject({ success: true });
+    // Its first update after 1.25 shares the XML with the other teams
+    expect(applied.sharedXml).toMatchObject({ status: 'published' });
+    expect(fs.readdirSync(path.join(repositoryPath, 'Centro'))).toEqual([applied.sharedXml.fileName]);
 
     const list = byId(await users());
     expect(list['10000001']).toMatchObject({ group_code: '1ESOA', image_path: photo('20251014093001.jpg') });

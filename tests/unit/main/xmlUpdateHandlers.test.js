@@ -286,6 +286,85 @@ describe('XML update', () => {
     });
   });
 
+  // The other teams find the XML in the repository's Centro folder
+  // (sharedXml.js has the details); here, that applying an update publishes
+  // it and that nothing about publishing can stop the update
+  describe('sharing the XML with the other teams', () => {
+    const { getAppliedXml, hashXml } = require('../../../src/main/sharedXml');
+    let repositoryPath;
+    const centroFiles = () => {
+      const centro = path.join(repositoryPath, 'Centro');
+      return fs.existsSync(centro) ? fs.readdirSync(centro) : [];
+    };
+    const unchangedRoll = () => writeXml(
+      `${groupsXml}<alumnos>${studentXml(1001)}${studentXml(1002, '1ESOA', 'LUIS')}</alumnos>` +
+      `<docentes>${teacherXml('D100')}</docentes>`
+    );
+
+    beforeEach(async () => {
+      repositoryPath = path.join(projectPath, 'Fotos Usuarios');
+      fs.mkdirSync(repositoryPath);
+      await db.setProjectSetting('imageRepositoryPath', repositoryPath);
+    });
+
+    test('should publish the applied XML, byte for byte', async () => {
+      const xmlPath = unchangedRoll();
+
+      const result = await apply(await analyse(xmlPath));
+
+      expect(result.success).toBe(true);
+      expect(result.sharedXml.status).toBe('published');
+      expect(centroFiles()).toEqual([result.sharedXml.fileName]);
+      expect(fs.readFileSync(path.join(repositoryPath, 'Centro', result.sharedXml.fileName))
+        .equals(fs.readFileSync(xmlPath))).toBe(true);
+    });
+
+    test('should record what was applied and where it was published', async () => {
+      const xmlPath = unchangedRoll();
+
+      const result = await apply(await analyse(xmlPath));
+
+      const applied = await getAppliedXml(db);
+      expect(applied.hash).toBe(hashXml(fs.readFileSync(xmlPath)));
+      expect(applied.fileName).toBe(result.sharedXml.fileName);
+    });
+
+    test('should not publish the same XML twice', async () => {
+      const xmlPath = unchangedRoll();
+      await apply(await analyse(xmlPath));
+
+      const again = await apply(await analyse(xmlPath));
+
+      expect(again.sharedXml.status).toBe('already');
+      expect(centroFiles()).toHaveLength(1);
+    });
+
+    test('should not publish until the changes are confirmed', async () => {
+      await analyse(unchangedRoll());
+
+      expect(centroFiles()).toEqual([]);
+    });
+
+    test('should still update a project without a repository, and say it was not shared', async () => {
+      await db.deleteProjectSetting('imageRepositoryPath');
+
+      const result = await apply(await analyse(unchangedRoll()));
+
+      expect(result.success).toBe(true);
+      expect(result.sharedXml.status).toBe('no-repository');
+      expect((await getAppliedXml(db)).fileName).toBeNull();
+    });
+
+    test('should still update when the repository is unavailable', async () => {
+      await db.setProjectSetting('imageRepositoryPath', path.join(projectPath, 'desconectada'));
+
+      const result = await apply(await analyse(unchangedRoll()));
+
+      expect(result.success).toBe(true);
+      expect(result.sharedXml.status).toBe('repository-unavailable');
+    });
+  });
+
   describe('the course', () => {
     const roll = (course) => writeXml(
       `${groupsXml}<alumnos>${studentXml(1001)}${studentXml(1002, '1ESOA', 'LUIS')}</alumnos>` +
