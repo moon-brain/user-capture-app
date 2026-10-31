@@ -50,7 +50,8 @@ Versiones instaladas según `package-lock.json`:
 - **Electron 44.10.0**, JavaScript CommonJS sin TypeScript ni bundler
 - **`node:sqlite`** (base de datos del proyecto), el SQLite que trae el Node
   de Electron (3.53.4 en Electron 44), sin paquete. **sharp 0.35.5** (imágenes)
-- **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.7** (XML)
+- **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 5.11.2** (XML;
+  publica también CommonJS, por eso Jest 29 la carga)
 - **pdfkit 0.20.2** (PDF), **yazl 3.3.1** (ZIP), **markdown-it 15.0.3** (manual).
   Los tipos de pdfkit (`@types/pdfkit`) siguen en la 0.17.7, la última
   publicada: describen bien lo que se usa (texto, imágenes y páginas)
