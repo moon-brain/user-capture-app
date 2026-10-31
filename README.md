@@ -101,7 +101,7 @@ npm test
 
 ### Módulos nativos
 
-sqlite3 y sharp son N-API e instalan binarios precompilados, así que no hay que reconstruir nada para Electron antes de distribuir.
+El único módulo nativo es sharp, que es N-API e instala binarios precompilados, así que no hay que reconstruir nada para Electron antes de distribuir. La base de datos usa `node:sqlite`, que viene con Electron.
 
 ### Generar ejecutable
 

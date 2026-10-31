@@ -181,6 +181,12 @@ describe.each(Object.entries(VERSIONS))('project and config.json written by %s',
     fs.rmSync(workRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 
+  test('should be a closed project, as the application leaves it', () => {
+    // A -wal or -shm here means something opened the fixture in place
+    // instead of a copy, even read-only: open copies, never the fixture
+    expect(fs.readdirSync(path.join(fixture, 'project', 'data'))).toEqual(['users.db']);
+  });
+
   test('should list every user with the photo and payment they had', async () => {
     const list = byId(await users());
 
@@ -333,7 +339,12 @@ describe.each(Object.entries(VERSIONS))('project and config.json written by %s',
     expect(list.filter((w) => w.builtIn).map((w) => w.id)).toEqual(['captura', 'revision', 'carnets']);
   });
 
-  test('should read the recent projects', () => {
-    expect(recentProjects.loadRecentProjects()).toEqual([expect.stringMatching(/Fotos curso 2025-26$/)]);
+  test('should read the recent projects, leaving out the ones no longer there', () => {
+    // The list holds where the fixture was generated, which is not on this disk
+    const saved = JSON.parse(fs.readFileSync(recentProjects.getRecentProjectsPath(), 'utf8'));
+    expect(saved).toEqual([expect.stringMatching(/Fotos curso 2025-26$/)]);
+    expect(fs.existsSync(saved[0])).toBe(false);
+
+    expect(recentProjects.loadRecentProjects()).toEqual([]);
   });
 });

@@ -18,10 +18,7 @@ describe('DatabaseManager', () => {
   let testId = 0;
   let db;
 
-  const query = (sql, params = []) =>
-    new Promise((resolve, reject) => {
-      db.db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-    });
+  const query = async (sql, params = []) => db.all(sql, params);
 
   const student = (nia, overrides = {}) => ({
     type: 'student',
@@ -305,13 +302,7 @@ describe('DatabaseManager', () => {
     test('should not count an empty image_path as a linked photo', async () => {
       await importUsers([student(5001), student(5002)]);
       const users = await db.getUsers({});
-      await new Promise((resolve, reject) => {
-        db.db.run(
-          'UPDATE users SET image_path = ? WHERE id = ?',
-          ['', users[0].id],
-          (err) => (err ? reject(err) : resolve())
-        );
-      });
+      db.run('UPDATE users SET image_path = ? WHERE id = ?', ['', users[0].id]);
 
       const stats = await db.getProjectStatistics();
 
@@ -331,13 +322,9 @@ describe('DatabaseManager', () => {
   });
 
   describe('getGroupPhotoCoverage()', () => {
-    const setGroup = (userId, groupCode) => new Promise((resolve, reject) => {
-      db.db.run(
-        'UPDATE users SET group_code = ? WHERE id = ?',
-        [groupCode, userId],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
+    const setGroup = async (userId, groupCode) => {
+      db.run('UPDATE users SET group_code = ? WHERE id = ?', [groupCode, userId]);
+    };
 
     test('should count linked and missing photos per group', async () => {
       await importUsers([student(6001), student(6002), student(6003)]);

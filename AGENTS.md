@@ -34,4 +34,4 @@
 
 ## Security & Configuration Tips
 - Do not commit secrets. If using Google Drive (`src/main/googleDriveManager.js`), store credentials securely and ignore local config files.
-- Native modules (`sqlite3`, `sharp`) are N-API and install prebuilt binaries; nothing is compiled for Electron. `electron-builder` still runs `install-app-deps` on its own before packaging.
+- The only native module is `sharp`: N-API with prebuilt binaries, nothing is compiled for Electron. `electron-builder` still runs `install-app-deps` on its own before packaging. The database uses `node:sqlite`, built into Electron's Node.

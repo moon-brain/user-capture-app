@@ -15,6 +15,12 @@ ajustes, copias de enlaces, preferencias y una actualización del XML.
 absolutas que guarda el proyecto) y qué pasos se saltaron porque esa versión
 no los tenía.
 
+## Ábrelas siempre en una copia
+
+Una base de datos en modo WAL deja `users.db-wal` y `users.db-shm` al abrirla,
+aunque sea solo para leer. Abre una copia (como hace el test), nunca la
+muestra: el test comprueba que `data/` solo tiene `users.db`.
+
 ## No se regeneran nunca
 
 Son lo que hay en los discos del centro. Si un cambio hace fallar el test, lo
@@ -30,8 +36,10 @@ antes del cambio:
 
 ```sh
 git worktree add --detach ../wt-1.30.0 v1.30.0
-# Los node_modules de ahora, si sqlite3 es la misma versión que en el tag
-# (compruébalo en su package-lock.json); si no, npm ci en el worktree
+# Desde la 1.25 la base de datos es node:sqlite, que viene con Node: valen
+# los node_modules de ahora. Las de la 1.24.1 o anteriores usan el paquete
+# sqlite3, que ya no está: para ellas, npm ci en el worktree (con su script
+# de instalación aprobado)
 New-Item -ItemType Junction -Path ../wt-1.30.0/node_modules -Target ./node_modules
 node tests/fixtures/compat/generate.cjs ../wt-1.30.0 tests/fixtures/compat/v1.30.0 D:\EduCapture-compat\v1.30.0
 ```

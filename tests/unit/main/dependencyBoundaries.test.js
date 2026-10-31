@@ -25,7 +25,9 @@ const ROOT = path.join(__dirname, '..', '..', '..');
 // Where each runtime dependency may be required from. When a library gets a
 // single facade module, shrink its list to that module.
 const ALLOWED = {
-  sqlite3: ['src/main/database.js'],
+  // Built into Node, not a package, but it changes with every Electron:
+  // the projects written by earlier versions are checked by compatibility.test.js
+  'node:sqlite': ['src/main/database.js'],
   chokidar: ['src/main/folderWatcher.js'],
   'fast-xml-parser': ['src/main/xmlParser.js'],
   'markdown-it': ['src/main/helpContent.js'],

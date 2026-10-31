@@ -319,7 +319,8 @@ vieja.
 - **Firma de código del instalador**. No se hace hoy y la migración no lo cambia.
 - **Subir `sqlite3` (6.0.1) y `sharp` (0.35.4)**. Existen versiones nuevas, pero
   las actuales funcionan con Electron 44 y mezclar cambios impediría atribuir
-  fallos.
+  fallos. ✅ 2026-10-31: sharp subió a la 0.35.5; sqlite3 se sustituyó por
+  `node:sqlite` porque se archivó en julio de 2026 (ver CLAUDE.md, «Decisiones»).
 
 ## Después de migrar
 

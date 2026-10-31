@@ -159,7 +159,8 @@ Para que la garantía no dependa de la memoria de nadie:
 - Los fixtures no se regeneran nunca. Cuando cambie el esquema se añade uno
   nuevo de la versión publicada en ese momento.
 - Estos tests son también la red para los saltos de versión mayor de sqlite3
-  (6) y sharp (0.35) del plan de dependencias.
+  (6) y sharp (0.35) del plan de dependencias. Lo fueron para el cambio de
+  sqlite3 a `node:sqlite` (2026-10-31).
 
 ## 6. Seguridad
 

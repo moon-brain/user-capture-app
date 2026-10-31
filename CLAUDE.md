@@ -48,7 +48,8 @@ que la usen otros centros.** Implica:
 
 Versiones instaladas según `package-lock.json`:
 - **Electron 44.10.0**, JavaScript CommonJS sin TypeScript ni bundler
-- **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.35.5** (imágenes)
+- **`node:sqlite`** (base de datos del proyecto), el SQLite que trae el Node
+  de Electron (3.53.4 en Electron 44), sin paquete. **sharp 0.35.5** (imágenes)
 - **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.7** (XML)
 - **pdfkit 0.20.2** (PDF), **yazl 3.3.1** (ZIP), **markdown-it 15.0.3** (manual).
   Los tipos de pdfkit (`@types/pdfkit`) siguen en la 0.17.7, la última
@@ -110,7 +111,7 @@ Versiones instaladas según `package-lock.json`:
 - «Orla» es solo el servicio de pago; el PDF de fotos por grupo es
   `photoRoster`
 - Toda carpeta de exportación se elige con `selectExportFolder()`
-- Cada biblioteca externa entra solo por sus módulos (sqlite3 por
+- Cada biblioteca externa entra solo por sus módulos (`node:sqlite` por
   `database.js`, chokidar por `folderWatcher.js`...), que son lo que hay que
   revisar al actualizarla. La tabla es `ALLOWED` en
   `tests/unit/main/dependencyBoundaries.test.js`: falla si se usa desde otro
@@ -154,6 +155,13 @@ Versiones instaladas según `package-lock.json`:
   mismo pasará con otras bibliotecas que pasen a ser solo ESM (chokidar 5):
   el que lo impide es Jest 29, no la aplicación, que en el Node 24 de Electron
   sí puede cargarlas
+- **La base de datos usa `node:sqlite`, no el paquete sqlite3**: sqlite3 se
+  archivó en julio de 2026 (la 6.0.1 es la última) y era el único módulo
+  nativo con script de instalación, que npm 11 bloquea; su cadena de
+  compilación (node-gyp, tar) traía los avisos graves de `npm audit`.
+  `node:sqlite` viene con Electron y sube de SQLite con él. Los archivos son
+  los mismos en los dos sentidos: comprobado que sqlite3 5.1.7 (la 1.24.1)
+  abre una base escrita con `node:sqlite`, por si una instalación vuelve atrás
 - **El instalador no está firmado**: se evaluó y se aplazó por coste; hoy no
   compensa la inversión. Windows SmartScreen avisará al instalar
 
@@ -197,7 +205,7 @@ user-capture-app/
 │   │   │   └── viewerMirrorWindow.js   # Ver > Visor en ventana aparte (otro monitor)
 │   │   ├── academicYear.js      # Curso académico del proyecto y fecha de las solicitudes
 │   │   ├── appDialogs.js        # Avisos y preguntas del proceso principal, con los modales propios
-│   │   ├── database.js          # Gestión de base de datos SQLite
+│   │   ├── database.js          # Base de datos del proyecto con node:sqlite (el único módulo que la toca)
 │   │   ├── folderWatcher.js     # Vigilancia de carpetas ingest/imports
 │   │   ├── helpContent.js       # Lectura, conversión y búsqueda del manual (Markdown)
 │   │   ├── imageManager.js      # Listado de las fotos de imports, con caché
@@ -325,9 +333,11 @@ user-capture-app/
 - `npm run install:clean` - Limpia y reinstala dependencias con npm ci
 
 ### Módulos nativos
-sqlite3 y sharp son N-API e instalan binarios precompilados: no se recompilan
-para Electron. electron-builder ejecuta `install-app-deps` por su cuenta antes
-de empaquetar, así que no hay ningún paso manual.
+El único módulo nativo es sharp, que es N-API e instala binarios
+precompilados: no se recompila para Electron. electron-builder ejecuta
+`install-app-deps` por su cuenta antes de empaquetar, así que no hay ningún
+paso manual. La base de datos no necesita nada: `node:sqlite` viene con
+Electron.
 
 El auxiliar de impresión de recibos (`native/receipt-printer/ReceiptPrinter.cs`)
 se compila con `scripts/build-receipt-printer.mjs`, que usa el compilador de C#
@@ -489,7 +499,14 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
 - **menuBuilder.js**: Constructor centralizado del menú con gestión de estado y callbacks
 
 ### Módulos Core
-- **database.js**: Gestión completa de SQLite (usuarios, grupos, imágenes, tags)
+- **database.js**: Gestión completa de SQLite (usuarios, grupos, imágenes,
+  tags) con `node:sqlite`. Es síncrono, pero los métodos siguen devolviendo
+  promesas, como con sqlite3. Iguala lo que hacía sqlite3: claves foráneas
+  desactivadas (`users.group_code` puede nombrar un grupo que el XML no trae),
+  `undefined` como NULL y booleanos como 1/0 (`bindable()`), filas como
+  objetos normales. Los textos en SQL van entre comillas simples: entre
+  dobles son nombres de columna. Las columnas añadidas después se comprueban
+  con `PRAGMA table_info` (`ADDED_USER_COLUMNS`), no por el texto del error
 - **folderWatcher.js**: Vigilancia de carpetas ingest/imports con chokidar
 - **imageManager.js**: Listado de las fotos de `imports`, con caché que invalida el vigilante
 - **pdfDocument.js**: El único módulo que crea documentos de pdfkit.
