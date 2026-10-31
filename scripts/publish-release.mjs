@@ -47,7 +47,10 @@ if (branch !== 'main') stop(`Estás en «${branch}». Se publica desde main, des
 
 if (git('status', '--porcelain', '--untracked-files=no').out) stop('Hay cambios sin commit en archivos del repositorio.');
 
-if (!git('fetch', '--quiet', 'origin', 'main', '--tags').ok) stop('No se ha podido consultar origin.');
+// Only main: fetching every tag fails when an old local tag differs from
+// GitHub's (v1.1.x and v1.2.x do, from a history rewrite), and the release
+// only needs to know about its own tag, asked for below
+if (!git('fetch', '--quiet', 'origin', 'main').ok) stop('No se ha podido consultar origin.');
 const local = git('rev-parse', 'HEAD').out;
 const remote = git('rev-parse', 'origin/main').out;
 if (local !== remote) stop('main no está igual que origin/main. Haz git pull (o revisa qué falta por fusionar).');
@@ -57,6 +60,14 @@ if (subject !== `chore(release): ${version}`) {
   stop(`El último commit de main es «${subject}», no «chore(release): ${version}».\n` +
     'Primero npm run release en una rama, su pull request y fusionarlo.');
 }
+
+// A tag on GitHub cannot be moved (the «Release tags» ruleset), so one there
+// on another commit means this version was already published
+const remoteTag = git('ls-remote', '--tags', 'origin', `refs/tags/${tag}^{}`, `refs/tags/${tag}`);
+if (!remoteTag.ok) stop('No se ha podido consultar los tags de origin.');
+const remoteLines = remoteTag.out ? remoteTag.out.split('\n') : [];
+const remoteCommit = (remoteLines.find((line) => line.endsWith('^{}')) || remoteLines[0] || '').split(/\s+/)[0];
+if (remoteCommit && remoteCommit !== local) stop(`El tag ${tag} ya está en GitHub y apunta a otro commit.`);
 
 const existing = git('rev-parse', '--verify', '--quiet', `refs/tags/${tag}^{commit}`);
 if (existing.ok && existing.out !== local) stop(`El tag ${tag} ya existe y apunta a otro commit.`);
