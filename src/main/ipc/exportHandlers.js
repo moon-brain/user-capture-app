@@ -1302,6 +1302,10 @@ function registerExportHandlers(context) {
 
   // Export inventory images from repository
   ipcMain.handle('export-inventory-images', async (event, folderPath, users, options) => {
+    // Where the photos wait to go into the ZIPs, inside the folder the user
+    // chose: removed however the export ends, even with nothing to zip
+    let tempFolder = null;
+
     try {
       if (!state.dbManager) {
         throw new Error('No hay ningún proyecto abierto');
@@ -1339,7 +1343,7 @@ function registerExportHandlers(context) {
       };
 
       // If ZIP is enabled, use temp folder, otherwise use target folder
-      const tempFolder = exportOptions.zipEnabled ? path.join(folderPath, '.temp-images') : null;
+      tempFolder = exportOptions.zipEnabled ? path.join(folderPath, '.temp-images') : null;
       const exportFolder = exportOptions.zipEnabled ? tempFolder : folderPath;
 
       // Create temp folder if needed
@@ -1418,11 +1422,6 @@ function registerExportHandlers(context) {
           logger.info(`Created ZIP: ${zip.name} (${zip.entries.length} images, ${Math.round(zip.bytes / 1024 / 1024)}MB)`);
         }
 
-        // Clean up temp folder
-        if (tempFolder && fs.existsSync(tempFolder)) {
-          fs.rmSync(tempFolder, { recursive: true, force: true });
-        }
-
         results.zipFiles = zipFiles;
       }
 
@@ -1440,6 +1439,14 @@ function registerExportHandlers(context) {
     } catch (error) {
       logger.error('Error exporting inventory images', error);
       return { success: false, error: error.message };
+    } finally {
+      if (tempFolder) {
+        try {
+          fs.rmSync(tempFolder, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+        } catch (error) {
+          logger.warning(`Could not remove the temporary folder ${tempFolder}: ${error.message}`);
+        }
+      }
     }
   });
 

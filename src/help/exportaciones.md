@@ -118,7 +118,7 @@ Sobre las fotos:
 
 - Salen del depósito de imágenes, no de las capturadas. Solo se incluyen los usuarios que tienen foto en el depósito.
 - Se llaman `NIA.jpg` o `DNI.jpg` y van todas juntas en la carpeta elegida, sin subcarpetas por grupo.
-- Con la compresión activada, las fotos van dentro de `imagenes.zip`. Si no caben en el tamaño máximo, se reparten en varios archivos: `imagenes_1.zip`, `imagenes_2.zip`, etc. En la carpeta no quedan fotos sueltas.
+- Con la compresión activada, las fotos van dentro de `imagenes.zip`. Si no caben en el tamaño máximo, se reparten en varios archivos: `imagenes_1.zip`, `imagenes_2.zip`, etc. En la carpeta no quedan fotos sueltas ni la carpeta temporal por la que pasan, aunque no haya ninguna foto que exportar o la exportación falle a medias.
 
 ## Exportar imágenes capturadas como ID
 
