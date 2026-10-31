@@ -15,7 +15,16 @@ updates:
     commit-message:
       prefix: fix(deps)
       prefix-development: chore(deps)
+    ignore:
+      # The types follow the Node that Electron carries (24 with Electron 44),
+      # not the newest Node: they are raised by hand with Electron
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
+      # Jest and its packages only work at the same major: one pull request
+      # for all of them, majors included (Jest 30 is its own piece of work)
+      jest:
+        patterns: ["jest", "jest-*", "@jest/*", "babel-jest"]
       # Minor and patch updates together, one pull request each; majors
       # come one by one, as they need reading their release notes
       production:
