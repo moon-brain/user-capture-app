@@ -72,6 +72,7 @@ const { registerUpdateHandlers } = require('./src/main/ipc/updateHandlers');
 const { registerHelpHandlers } = require('./src/main/ipc/helpHandlers');
 const { registerAppDialogHandlers, showAppMessage, askAppQuestion } = require('./src/main/appDialogs');
 const { scanReplacedArchive, shouldNoticeArchive } = require('./src/main/replacedArchive');
+const { publishProjectXml } = require('./src/main/sharedXml');
 const { registerWorkspaceHandlers } = require('./src/main/ipc/workspaceHandlers');
 
 // Enable hot reload in development
@@ -410,7 +411,14 @@ function createMenu() {
         return await getImageRepositoryPath(dbManager);
       },
       setImageRepositoryPath: async (path) => {
-        return await setImageRepositoryPath(dbManager, path);
+        const saved = await setImageRepositoryPath(dbManager, path);
+        if (saved) {
+          // A new project gets its repository after it is created: this is
+          // when its XML is first shared with the other teams
+          const shared = await publishProjectXml(dbManager, path);
+          logger.info(`School XML on repository change: ${shared.status}`, shared.fileName || shared.error || null);
+        }
+        return saved;
       },
       reinitializeRepositoryMirror,
       setIncomingRotation: async (degrees) => {

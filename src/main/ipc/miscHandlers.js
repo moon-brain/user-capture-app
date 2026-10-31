@@ -6,7 +6,7 @@ const { ipcMain, dialog } = require('electron');
 const path = require('path');
 const { getActiveIngestPath, getConfiguredIngestPath } = require('../ingestFolder');
 const { getLastExportFolder, setLastExportFolder, getUpdatePreferences, saveUpdatePreferences, isOrlaServiceEnabled, normalizeExportDefaults, getExportDefaults } = require('../utils/config');
-const { publishAppliedXml, getAppliedXml, parsePublishedName } = require('../sharedXml');
+const { publishProjectXml, getAppliedXml, parsePublishedName } = require('../sharedXml');
 const { getImageRepositoryPath, setImageRepositoryPath, getSelectedGroupFilter, setSelectedGroupFilter, loadGlobalConfig, saveGlobalConfig } = require('../utils/config');
 const VersionManager = require('../utils/version');
 const { listRequestFolder, projectRequests, reviewRequests, archiveRequests, stampRequest } = require('../pendingRequests');
@@ -149,11 +149,7 @@ function registerMiscHandlers(context) {
 
         // A new project gets its repository after it is created, so this is
         // when its XML can be shared; also when moving to another repository
-        const sharedXml = await publishAppliedXml({
-          dbManager: state.dbManager,
-          repositoryPath,
-          xmlPath: await state.dbManager.getProjectSetting('xmlFilePath')
-        });
+        const sharedXml = await publishProjectXml(state.dbManager, repositoryPath);
         logger.info(`School XML on repository change: ${sharedXml.status}`, sharedXml.fileName || sharedXml.error || null);
 
         return { success: true, sharedXml };

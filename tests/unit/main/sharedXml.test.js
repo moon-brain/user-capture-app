@@ -21,7 +21,8 @@ const {
   publishXml,
   getAppliedXml,
   setAppliedXml,
-  publishAppliedXml
+  publishAppliedXml,
+  publishProjectXml
 } = require('../../../src/main/sharedXml');
 
 describe('sharedXml', () => {
@@ -232,6 +233,28 @@ describe('sharedXml', () => {
       expect(result.status).toBe('failed');
       expect(result.error).toEqual(expect.any(String));
       expect((await getAppliedXml(db)).fileName).toBeNull();
+    });
+  });
+
+  describe('publishProjectXml()', () => {
+    test('should publish the XML the project recorded, read from its xmlFilePath', async () => {
+      const xmlPath = path.join(root, 'usuarios.xml');
+      fs.writeFileSync(xmlPath, XML);
+      const db = makeDb({ xmlFilePath: xmlPath });
+      await setAppliedXml(db, { hash: hashXml(XML), fileName: null, appliedAt: NOW.toISOString() });
+
+      const result = await publishProjectXml(db, repositoryPath);
+
+      expect(result.status).toBe('published');
+      expect(centroFiles()).toEqual([result.fileName]);
+    });
+
+    test('should report a failure reading the settings instead of throwing', async () => {
+      const db = makeDb();
+      db.getProjectSetting.mockRejectedValue(new Error('database is closed'));
+
+      await expect(publishProjectXml(db, repositoryPath))
+        .resolves.toEqual({ status: 'failed', error: 'database is closed' });
     });
   });
 });
