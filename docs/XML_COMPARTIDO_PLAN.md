@@ -1,7 +1,7 @@
 # XML del centro compartido por el depósito
 
-Estado: **fases 1 y 4 implementadas** (2026-10-31, rama `feat/shared-xml-publish`);
-faltan las fases 2 y 3. Decisiones tomadas el 2026-10-31.
+Estado: **implementado** (2026-10-31): fases 1 y 4 en `feat/shared-xml-publish`,
+2 y 3 en `feat/shared-xml-notice`. Decisiones tomadas el 2026-10-31.
 
 ## 1. Problema
 
@@ -196,9 +196,13 @@ Cada fase actualiza el manual (`src/help/`) en el mismo commit.
    `sharedXml`. Sin aviso todavía; lo visible es la línea de **Información
    del proyecto** y una frase en el mensaje final de la actualización. ✅
    2026-10-31 (`sharedXml.js`).
-2. **Avisar** en los demás equipos (3.3 y 3.4).
+2. **Avisar** en los demás equipos (3.3 y 3.4). ✅ 2026-10-31: badge
+   `#shared-xml-alert` sobre la lista (`SharedXmlNotice`), `check-shared-xml`
+   con caché de un minuto, y nota en **Información del proyecto**.
 3. **Aplicar desde el aviso**, reutilizando `update-xml` y
-   `confirm-update-xml` con la ruta del archivo publicado.
+   `confirm-update-xml` con la ruta del archivo publicado. ✅ 2026-10-31: pulsar
+   el badge abre ese análisis con el archivo de `Centro/`, que al aplicarse
+   se reconoce como ya publicado y no se vuelve a copiar.
 4. **Rechazo de DOCTYPE y límite de tamaño** (sección 6). ✅ 2026-10-31,
    con la fase 1: `<!DOCTYPE` fuera de comentarios y CDATA, y 20 MB.
 

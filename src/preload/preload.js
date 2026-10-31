@@ -253,6 +253,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // XML update
   updateXML: (xmlPath) => ipcRenderer.invoke('update-xml', xmlPath),
+  checkSharedXml: () => ipcRenderer.invoke('check-shared-xml'),
   confirmUpdateXML: (data) => ipcRenderer.invoke('confirm-update-xml', data),
   onMenuUpdateXML: (callback) => {
     ipcRenderer.on('menu-update-xml', callback);

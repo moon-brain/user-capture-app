@@ -251,6 +251,106 @@ async function publishAppliedXml({ dbManager, repositoryPath, xmlPath, options }
   }
 }
 
+// Enough to hold the <centro> start tag, which comes first
+const HEAD_BYTES = 64 * 1024;
+const COURSE_PATTERN = /<centro\b[^>]*?\scurso\s*=\s*["'](\d{4})["']/;
+
+/**
+ * Course of a published XML, from <centro curso="2026">, reading only the
+ * start of the file
+ * @param {string} filePath
+ * @returns {Promise<number|null>}
+ */
+async function readCourse(filePath) {
+  const handle = await fs.promises.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(HEAD_BYTES);
+    const { bytesRead } = await handle.read(buffer, 0, HEAD_BYTES, 0);
+    const match = COURSE_PATTERN.exec(buffer.subarray(0, bytesRead).toString('utf8'));
+    return match ? Number(match[1]) : null;
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * @typedef {Object} NewerXml
+ * @property {string} fileName
+ * @property {string} filePath
+ * @property {string} publishedAt - ISO
+ * @property {string} team
+ * @property {number} academicYear
+ */
+
+/**
+ * The XML in Centro this project could update to, if there is one
+ *
+ * The most recent publication of the project's course that is newer than what
+ * the project applied and has different content. Publications of other
+ * courses are never offered: opening a project of a previous course on
+ * purpose is normal, and so is a file without a course, which is skipped.
+ *
+ * Newest first, and only as far as needed: once a publication is not newer
+ * than what was applied, the older ones cannot be either.
+ *
+ * @param {Object} params
+ * @param {string} params.repositoryPath
+ * @param {number} params.academicYear - the project's course
+ * @param {AppliedXml|null} params.applied - null for projects from before 1.25
+ * @param {string|null} [params.currentHash] - for those, hash of the XML file
+ *   they recorded, if it can still be read
+ * @returns {Promise<NewerXml|null>}
+ */
+async function findNewerXml({ repositoryPath, academicYear, applied, currentHash = null }) {
+  const folderPath = path.join(repositoryPath, SHARED_XML_FOLDER);
+  let names;
+  try {
+    names = await fs.promises.readdir(folderPath);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+    throw error;
+  }
+
+  // What the project has: its publication's date when it was published,
+  // otherwise when it was applied
+  let since = null;
+  if (applied) {
+    const own = applied.fileName ? parsePublishedName(applied.fileName) : null;
+    since = own ? own.publishedAt : (applied.appliedAt ? new Date(applied.appliedAt) : null);
+  }
+  const haveHash = applied ? applied.hash : currentHash;
+
+  const candidates = names
+    .map((name) => ({ name, parsed: parsePublishedName(name) }))
+    .filter((c) => c.parsed)
+    .sort((a, b) => b.parsed.publishedAt.getTime() - a.parsed.publishedAt.getTime() ||
+      (a.name < b.name ? 1 : -1));
+
+  for (const { name, parsed } of candidates) {
+    if (since && !(parsed.publishedAt.getTime() > since.getTime())) break;
+    if (applied && name === applied.fileName) break;
+
+    const filePath = path.join(folderPath, name);
+    try {
+      if ((await readCourse(filePath)) !== academicYear) continue;
+      if (haveHash && hashXml(await fs.promises.readFile(filePath)) === haveHash) break;
+    } catch {
+      // Gone or unreadable meanwhile: look at the next one
+      continue;
+    }
+
+    return {
+      fileName: name,
+      filePath,
+      publishedAt: parsed.publishedAt.toISOString(),
+      team: parsed.team,
+      academicYear
+    };
+  }
+
+  return null;
+}
+
 /**
  * Publish the open project's XML to a repository it has just been given
  *
@@ -276,6 +376,8 @@ async function publishProjectXml(dbManager, repositoryPath) {
 
 module.exports = {
   publishProjectXml,
+  readCourse,
+  findNewerXml,
   SHARED_XML_FOLDER,
   hashXml,
   teamName,

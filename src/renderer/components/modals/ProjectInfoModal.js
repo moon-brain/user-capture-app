@@ -179,8 +179,17 @@
     sharedXmlRow(info) {
       const label = 'XML compartido en el depósito';
       const shared = info.sharedXml;
+      const newer = info.newerSharedXml;
+      const newerNote = newer ? {
+        text: `Hay uno más reciente, publicado${newer.publishedAt ? ` el ${formatDateTime(newer.publishedAt)}` : ''} por ${newer.team}`,
+        title: newer.fileName,
+        className: 'project-info-note-warning'
+      } : null;
       if (!shared) {
-        return [label, null];
+        return [label, null, newerNote];
+      }
+      if (newerNote) {
+        return [label, shared.fileName || 'Sin publicar', newerNote];
       }
       if (!shared.fileName) {
         return [label, 'Sin publicar', {

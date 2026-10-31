@@ -365,6 +365,88 @@ describe('XML update', () => {
     });
   });
 
+  // check-shared-xml: what the notice of a more recent XML asks
+  describe('a more recent XML published by another team', () => {
+    const { publishXml } = require('../../../src/main/sharedXml');
+    let repositoryPath;
+    const check = () => mockHandlers.get('check-shared-xml')({});
+    const roll = (extra = '') =>
+      `<centro curso="2026">${groupsXml}<alumnos>${studentXml(1001)}${studentXml(1002, '1ESOA', 'LUIS')}${extra}</alumnos>` +
+      `<docentes>${teacherXml('D100')}</docentes></centro>`;
+    const writeRoll = (extra) => {
+      const xmlPath = path.join(projectPath, `roll-${Math.random()}.xml`);
+      fs.writeFileSync(xmlPath, roll(extra), 'utf8');
+      return xmlPath;
+    };
+    const publishFromAnotherTeam = (extra, now = new Date(Date.now() + 60 * 60 * 1000)) =>
+      publishXml(repositoryPath, Buffer.from(roll(extra)), { now, team: 'PC-FOTOS' });
+
+    beforeEach(async () => {
+      state.sharedXmlCheck = null;
+      repositoryPath = path.join(projectPath, 'Fotos Usuarios');
+      fs.mkdirSync(repositoryPath);
+      await db.setProjectSetting('imageRepositoryPath', repositoryPath);
+      await db.setProjectSetting('academicYear', '2026');
+      // This team applies and publishes its XML
+      await apply(await analyse(writeRoll()));
+    });
+
+    test('should find nothing while this project has the latest', async () => {
+      await expect(check()).resolves.toEqual({ success: true, newer: null });
+    });
+
+    test('should report a later XML of the course, with where it is', async () => {
+      const { fileName } = await publishFromAnotherTeam(studentXml(1003));
+
+      const result = await check();
+
+      expect(result.newer).toEqual(expect.objectContaining({
+        fileName,
+        filePath: path.join(repositoryPath, 'Centro', fileName),
+        team: 'PC-FOTOS'
+      }));
+    });
+
+    test('should read Centro once a minute at most', async () => {
+      await check();
+      await publishFromAnotherTeam(studentXml(1003));
+
+      await expect(check()).resolves.toEqual({ success: true, newer: null });
+
+      state.sharedXmlCheck.at -= 61 * 1000;
+      await expect(check()).resolves.toEqual(expect.objectContaining({ newer: expect.any(Object) }));
+    });
+
+    test('should look again at once after applying the published XML, and find it applied', async () => {
+      const { fileName } = await publishFromAnotherTeam(studentXml(1003));
+      const { newer } = await check();
+      expect(newer.fileName).toBe(fileName);
+
+      const result = await apply(await analyse(newer.filePath));
+
+      expect(result.sharedXml).toEqual({ status: 'already', fileName });
+      await expect(check()).resolves.toEqual({ success: true, newer: null });
+    });
+
+    test('should say nothing without a repository', async () => {
+      await db.deleteProjectSetting('imageRepositoryPath');
+
+      await expect(check()).resolves.toEqual({ success: true, newer: null, reason: 'no-repository' });
+    });
+
+    test('should say nothing while the repository is unavailable', async () => {
+      await db.setProjectSetting('imageRepositoryPath', path.join(projectPath, 'desconectada'));
+
+      await expect(check()).resolves.toEqual({ success: true, newer: null, reason: 'repository-unavailable' });
+    });
+
+    test('should refuse without an open project', async () => {
+      state.dbManager = null;
+
+      await expect(check()).resolves.toEqual(expect.objectContaining({ success: false }));
+    });
+  });
+
   describe('the course', () => {
     const roll = (course) => writeXml(
       `${groupsXml}<alumnos>${studentXml(1001)}${studentXml(1002, '1ESOA', 'LUIS')}</alumnos>` +

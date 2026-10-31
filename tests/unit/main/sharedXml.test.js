@@ -22,7 +22,9 @@ const {
   getAppliedXml,
   setAppliedXml,
   publishAppliedXml,
-  publishProjectXml
+  publishProjectXml,
+  readCourse,
+  findNewerXml
 } = require('../../../src/main/sharedXml');
 
 describe('sharedXml', () => {
@@ -255,6 +257,124 @@ describe('sharedXml', () => {
 
       await expect(publishProjectXml(db, repositoryPath))
         .resolves.toEqual({ status: 'failed', error: 'database is closed' });
+    });
+  });
+
+  describe('readCourse()', () => {
+    const write = (content) => {
+      const filePath = path.join(root, `curso-${Math.random()}.xml`);
+      fs.writeFileSync(filePath, content);
+      return filePath;
+    };
+
+    test('should read the course from the centro start tag', async () => {
+      await expect(readCourse(write('<?xml version="1.0"?>\n<centro codigo="46000" curso="2026">')))
+        .resolves.toBe(2026);
+    });
+
+    test('should accept single quotes and attributes on several lines', async () => {
+      await expect(readCourse(write("<centro\n  codigo='46000'\n  curso='2025'>"))).resolves.toBe(2025);
+    });
+
+    test('should read nothing from a file without a course', async () => {
+      await expect(readCourse(write('<centro codigo="46000"><grupos curso="2026"/></centro>'))).resolves.toBeNull();
+    });
+
+    test('should not take an attribute that only ends in curso', async () => {
+      await expect(readCourse(write('<centro precurso="2026">'))).resolves.toBeNull();
+    });
+  });
+
+  describe('findNewerXml()', () => {
+    const xmlFor = (course, extra = '') => Buffer.from(`<?xml version="1.0"?><centro curso="${course}">${extra}</centro>`);
+    const publishAt = (content, date, team = 'DIRECCION') =>
+      publishXml(repositoryPath, content, { now: date, team }).then((r) => r.fileName);
+    const appliedFrom = (content, fileName, appliedAt = NOW) =>
+      ({ hash: hashXml(content), fileName, appliedAt: appliedAt.toISOString() });
+    const find = (applied, extra = {}) => findNewerXml({ repositoryPath, academicYear: 2026, applied, ...extra });
+
+    const OCT = new Date(2026, 9, 1, 9, 0, 0);
+    const NOV = new Date(2026, 10, 3, 9, 0, 0);
+    const DEC = new Date(2026, 11, 1, 9, 0, 0);
+
+    test('should find nothing when there is no Centro folder', async () => {
+      await expect(find(null)).resolves.toBeNull();
+    });
+
+    test('should offer a later publication of the same course, with who and when', async () => {
+      const mine = await publishAt(xmlFor(2026), OCT);
+      const theirs = await publishAt(xmlFor(2026, '<alumnos/>'), NOV, 'PC-FOTOS');
+
+      const newer = await find(appliedFrom(xmlFor(2026), mine));
+
+      expect(newer).toEqual({
+        fileName: theirs,
+        filePath: path.join(centroPath, theirs),
+        publishedAt: NOV.toISOString(),
+        team: 'PC-FOTOS',
+        academicYear: 2026
+      });
+    });
+
+    test('should find nothing when what the project applied is the latest', async () => {
+      await publishAt(xmlFor(2026, '<alumnos/>'), OCT);
+      const mine = await publishAt(xmlFor(2026), NOV);
+
+      await expect(find(appliedFrom(xmlFor(2026), mine))).resolves.toBeNull();
+    });
+
+    test('should not offer another course, but still the latest of its own behind it', async () => {
+      const mine = await publishAt(xmlFor(2026), OCT);
+      const ownCourse = await publishAt(xmlFor(2026, '<alumnos/>'), NOV);
+      await publishAt(xmlFor(2027), DEC);
+
+      await expect(find(appliedFrom(xmlFor(2026), mine))).resolves.toEqual(expect.objectContaining({ fileName: ownCourse }));
+    });
+
+    test('should offer nothing to a project of a previous course opened on purpose', async () => {
+      const mine = await publishAt(xmlFor(2025), OCT);
+      await publishAt(xmlFor(2026), NOV);
+
+      await expect(find(appliedFrom(xmlFor(2025), mine), { academicYear: 2025 })).resolves.toBeNull();
+    });
+
+    test('should skip a publication without a course', async () => {
+      const mine = await publishAt(xmlFor(2026), OCT);
+      await publishAt(Buffer.from('<centro><alumnos/></centro>'), NOV);
+
+      await expect(find(appliedFrom(xmlFor(2026), mine))).resolves.toBeNull();
+    });
+
+    test('should not offer a later copy of the same content', async () => {
+      // Two teams published the same XML before either saw the other's
+      fs.mkdirSync(centroPath);
+      fs.writeFileSync(path.join(centroPath, 'centro_20261103090000_PC-FOTOS.xml'), xmlFor(2026));
+      const mine = await publishAt(xmlFor(2026), OCT);
+
+      await expect(find(appliedFrom(xmlFor(2026), mine))).resolves.toBeNull();
+    });
+
+    test('should compare with the date it was applied when it was never published', async () => {
+      await publishAt(xmlFor(2026, '<alumnos/>'), OCT);
+      const later = await publishAt(xmlFor(2026, '<docentes/>'), DEC);
+
+      const applied = appliedFrom(xmlFor(2026), null, NOV);
+
+      await expect(find(applied)).resolves.toEqual(expect.objectContaining({ fileName: later }));
+    });
+
+    describe('a project from before 1.25, which never recorded what it applied', () => {
+      test('should offer the latest of its course', async () => {
+        const latest = await publishAt(xmlFor(2026), NOV);
+
+        await expect(find(null)).resolves.toEqual(expect.objectContaining({ fileName: latest }));
+      });
+
+      test('should not offer the XML it already has', async () => {
+        await publishAt(xmlFor(2026), NOV);
+
+        await expect(find(null, { currentHash: hashXml(xmlFor(2026)) })).resolves.toBeNull();
+      });
     });
   });
 });
