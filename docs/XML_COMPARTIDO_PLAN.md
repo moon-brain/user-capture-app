@@ -143,13 +143,19 @@ seguir funcionando y actualizarse con normalidad a la nueva.
 
 Para que la garantía no dependa de la memoria de nadie:
 
-- `tests/fixtures/compat/` con un proyecto (`data/*.sqlite` con usuarios,
-  fotos enlazadas, pagos y etiquetas) y un `config.json` **creados por la
-  1.24.1**, la versión desplegada hoy. Si se puede, también uno de la 1.7.0,
-  generado desde ese tag en un `git worktree`.
-- Un test que, con el código actual, abre esos proyectos, lista los usuarios,
-  aplica una actualización de XML y comprueba que se conservan enlaces,
-  pagos y etiquetas.
+- ✅ 2026-10-31: `tests/fixtures/compat/` con un proyecto (usuarios, fotos
+  enlazadas y compartidas, Eliminados, pagos, etiquetas, ajustes, copia de
+  enlaces y un recorte) y un `config.json` **creados por la propia versión**
+  con `generate.cjs` desde un `git worktree` del tag:
+  - `v1.24.1`, la desplegada hoy;
+  - `v1.6.0` en lugar de la 1.7.0: es la que creó los proyectos del curso
+    2025-26 (la 1.7.0 es de septiembre de 2026), los que se abrirán como
+    «proyecto de un curso anterior».
+- ✅ `tests/unit/main/compatibility.test.js`: con el código actual abre esos
+  proyectos, lista los usuarios, restaura la copia de enlaces, aplica una
+  actualización de XML y comprueba que se conservan enlaces, pagos y
+  etiquetas, y que se leen todas las preferencias. Comprobado que falla al
+  renombrar una clave de `project_settings` o quitar una migración.
 - Los fixtures no se regeneran nunca. Cuando cambie el esquema se añade uno
   nuevo de la versión publicada en ese momento.
 - Estos tests son también la red para los saltos de versión mayor de sqlite3
@@ -173,8 +179,8 @@ que puede escribir más de un equipo.
 
 Cada fase actualiza el manual (`src/help/`) en el mismo commit.
 
-0. **Garantías** (sección 5): el inventario y la redirección ya están
-   resueltos; quedan los tests de compatibilidad. Va antes que todo lo demás.
+0. **Garantías** (sección 5). ✅ 2026-10-31: inventario, redirección y tests
+   de compatibilidad (5.3).
 1. **Publicar**: al actualizar y al crear, con hash y `sharedXml`. Sin aviso
    todavía; lo único visible es la línea de **Información del proyecto**.
 2. **Avisar** en los demás equipos (3.3 y 3.4).

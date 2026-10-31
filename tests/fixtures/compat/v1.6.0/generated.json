@@ -1,0 +1,24 @@
+{
+  "version": "1.6.0",
+  "generatedAt": "2026-10-31T13:44:16.977Z",
+  "projectPath": "D:\\EduCapture-compat\\1.6.0\\Fotos curso 2025-26",
+  "xmlPath": "D:\\EduCapture-compat\\1.6.0\\XML\\centro_2025.xml",
+  "updatedXmlPath": "D:\\EduCapture-compat\\1.6.0\\XML\\centro_2025_enero.xml",
+  "skipped": [
+    "src/main/ingestFolder",
+    "src/main/workspaces",
+    "src/main/ipc/workspaceHandlers",
+    "rotate-captured-image",
+    "crop-captured-image",
+    "setConfiguredIngestPath",
+    "setIncomingRotation",
+    "create-workspace",
+    "set-workspace-hidden",
+    "saveUpdatePreferences",
+    "saveReplacedArchiveNotice",
+    "setLastExportFolder",
+    "main.js cameraAutoStart",
+    "main.js viewerMirror",
+    "main.js thumbnailGridSource"
+  ]
+}

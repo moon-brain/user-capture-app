@@ -1,0 +1,20 @@
+{
+  "centerName": "IES Ejemplo",
+  "logoPath": "G:\\Mi unidad\\logo.png",
+  "receiptConfig": {
+    "subtitle": "Orla 2º Bachillerato",
+    "price": "25",
+    "footerText": "Gracias"
+  },
+  "printer": {
+    "name": "EPSON TM-T20II Receipt",
+    "displayName": "EPSON TM-T20II Receipt"
+  },
+  "selectedGroupFilter": "2BACHA",
+  "showDuplicatesOnly": false,
+  "showCardPrintRequestsOnly": false,
+  "showCapturedPhotos": true,
+  "showRepositoryPhotos": true,
+  "showRepositoryIndicators": false,
+  "showAdditionalActions": true
+}

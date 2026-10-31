@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<centro codigo="46000000" curso="2025">
+  <grupos>
+    <grupo codigo="1ESOA" nombre="1º ESO A"/>
+    <grupo codigo="2BACHA" nombre="2º Bachillerato A"/>
+  </grupos>
+  <alumnos>
+    <alumno nombre="Begoña" apellido1="Núñez" apellido2="Pérez" NIA="10000001" grupo="1ESOA" fecha_nac="14/02/2012" documento=""/>
+    <alumno nombre="Ana" apellido1="Álvarez" apellido2="Gil" NIA="10000002" grupo="2BACHA" fecha_nac="03/05/2007" documento=""/>
+    <alumno nombre="Luis" apellido1="Zapata" apellido2="Ruiz" NIA="10000003" grupo="2BACHA" fecha_nac="20/11/2008" documento=""/>
+    <alumno nombre="Iñaki" apellido1="Sáez" apellido2="Ortega" NIA="10000004" grupo="1ESOA" fecha_nac="01/09/2012" documento=""/>
+    <alumno nombre="Marta" apellido1="Ibáñez" apellido2="" NIA="0012345" grupo="1ESOA" fecha_nac="30/12/2011" documento=""/>
+  </alumnos>
+  <docentes>
+    <docente nombre="María José" apellido1="Ruiz" apellido2="Llorens" documento="12345678Z" fecha_nac="10/06/1975"/>
+  </docentes>
+  <no_docentes>
+    <no_docente nombre="Pedro" apellido1="Gómez" apellido2="" documento="X1234567L" fecha_nac="22/01/1980"/>
+  </no_docentes>
+</centro>

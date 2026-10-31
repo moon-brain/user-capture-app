@@ -32,6 +32,10 @@ que la usen otros centros.** Implica:
 - Los proyectos (`data/*.sqlite`, `project_settings`) y `config.json` de
   versiones anteriores deben seguir abriéndose: cambios de esquema o de claves
   siempre compatibles hacia atrás, con valor por defecto si falta la clave.
+  Lo comprueba `tests/unit/main/compatibility.test.js` con proyectos y
+  `config.json` escritos por la 1.6.0 (los del curso 2025-26) y la 1.24.1, en
+  `tests/fixtures/compat/`. Esas muestras no se regeneran nunca; al cambiar el
+  esquema se añade la de la última versión publicada (ver su `README.md`)
 - El depósito lo comparten equipos y cursos: no borrar ni mover nada en él por
   iniciativa de la aplicación (ver solicitudes y `Reemplazadas`).
 - Volumen: cientos o pocos miles de usuarios por proyecto; ya hay virtual

@@ -1,0 +1,71 @@
+{
+  "centerName": "IES Ejemplo",
+  "logoPath": "G:\\Mi unidad\\logo.png",
+  "receiptConfig": {
+    "subtitle": "Orla 2º Bachillerato",
+    "price": 25,
+    "footerText": "Gracias"
+  },
+  "orla": {
+    "enabled": true
+  },
+  "exportDefaults": {
+    "mode": "resize",
+    "boxSize": 1200,
+    "maxSize": 300
+  },
+  "printer": {
+    "name": "EPSON TM-T20II Receipt",
+    "displayName": "EPSON TM-T20II Receipt"
+  },
+  "selectedGroupFilter": "2BACHA",
+  "workspaces": {
+    "custom": [
+      {
+        "id": "custom-mvwg8q9c-3fgm",
+        "name": "Orla con historial",
+        "view": {
+          "showCapturedPhotos": true,
+          "showRepositoryPhotos": true,
+          "showRepositoryIndicators": false,
+          "showAdditionalActions": true,
+          "showCaptureHistory": true,
+          "showThumbnailGrid": false
+        }
+      }
+    ],
+    "hiddenBuiltIns": [
+      "revision"
+    ]
+  },
+  "showDuplicatesOnly": false,
+  "showCardPrintRequestsOnly": false,
+  "showPublicationRequestsOnly": false,
+  "showCapturedPhotos": true,
+  "showRepositoryPhotos": true,
+  "showRepositoryIndicators": false,
+  "showAdditionalActions": true,
+  "showCaptureHistory": true,
+  "showThumbnailGrid": false,
+  "sortByLinkDate": true,
+  "updates": {
+    "autoCheck": false,
+    "lastCheck": "2026-10-20T08:00:00.000Z",
+    "skippedVersion": "1.24.0"
+  },
+  "replacedArchive": {
+    "lastNotice": "2026-10-01T08:00:00.000Z"
+  },
+  "lastExportFolder": "G:\\Mi unidad\\Exportaciones",
+  "cameraAutoStart": true,
+  "viewerMirror": {
+    "bounds": {
+      "x": 1920,
+      "y": 0,
+      "width": 1280,
+      "height": 1024
+    },
+    "fullScreen": true
+  },
+  "thumbnailGridSource": "repository"
+}
