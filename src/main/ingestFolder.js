@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Ingest folder of a project
  *

@@ -1,3 +1,4 @@
+// @ts-check
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 // Expose protected methods that allow the renderer process to use

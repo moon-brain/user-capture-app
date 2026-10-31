@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Recent projects management utilities
  */

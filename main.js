@@ -1,3 +1,4 @@
+// @ts-check
 // Must be set before anything touches the thread pool, so it goes above every
 // require. Node defaults to four threads, and every file read and every
 // thumbnail sharp encodes queues on them: scrolling a long list asks for dozens
@@ -76,7 +77,8 @@ const { registerWorkspaceHandlers } = require('./src/main/ipc/workspaceHandlers'
 // Enable hot reload in development
 if (process.argv.includes('--dev')) {
   try {
-    require('electron-reloader')(module, {
+    // Its types expect Node's full Module; CommonJS JS only types module.exports
+    require('electron-reloader')(/** @type {any} */ (module), {
       debug: true,
       watchRenderer: true
     });
@@ -1240,6 +1242,7 @@ function registerIPCHandlers() {
   const state = sharedState;
 
   // Create shared context object for all handlers
+  /** @type {import('./src/main/ipc/context').IpcContext} */
   const context = {
     mainWindow: () => mainWindowManager.getWindow(),
     logger,

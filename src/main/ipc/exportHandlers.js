@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Export-related IPC handlers
  */
@@ -822,11 +823,11 @@ async function loadInstitutionLogo(logger) {
 
 /**
  * Helper function to add logo to PDF page
- * @param {PDFDocument} doc - PDFKit document instance
+ * @param {PDFKit.PDFDocument} doc - PDFKit document instance
  * @param {Object} logger - Logger instance
- * @param {Object} options - Optional configuration
- * @param {boolean} options.useFixedPosition - If true, position at top of page (y=20) instead of using margins
- * @param {number} options.alignX - If provided, use this X position instead of default
+ * @param {Object} [options] - Optional configuration
+ * @param {boolean} [options.useFixedPosition] - If true, position at top of page (y=20) instead of using margins
+ * @param {number} [options.alignX] - If provided, use this X position instead of default
  * @returns {Promise<void>}
  */
 async function addLogoToPDFPage(doc, logger, options = {}) {
@@ -895,10 +896,7 @@ function parseRepositoryExportRequests(value) {
 
 /**
  * Register export-related IPC handlers
- * @param {Object} context - Shared context object
- * @param {BrowserWindow} context.mainWindow - Main window instance
- * @param {Object} context.logger - Logger instance
- * @param {Object} context.state - Application state
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerExportHandlers(context) {
   const { mainWindow: getMainWindow, logger, state, repositoryMirror } = context;
@@ -2003,7 +2001,7 @@ function registerExportHandlers(context) {
 
         // Wait for write stream to finish
         await new Promise((resolve, reject) => {
-          writeStream.on('finish', resolve);
+          writeStream.on('finish', () => resolve(undefined));
           writeStream.on('error', reject);
         });
 
@@ -2134,7 +2132,7 @@ function registerExportHandlers(context) {
 
       doc.end();
 
-      await new Promise((resolve) => stream.on('finish', resolve));
+      await new Promise((resolve) => stream.on('finish', () => resolve(undefined)));
 
       logger.section('PAID USERS LIST PDF EXPORT COMPLETED');
       logger.success(`Generated PDF: ${fileName}`);

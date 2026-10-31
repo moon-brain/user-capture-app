@@ -1,3 +1,4 @@
+// @ts-check
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -315,5 +316,4 @@ class ThumbnailService {
   }
 }
 
-module.exports = ThumbnailService;
-module.exports.DEFAULT_MAX_BYTES = DEFAULT_MAX_BYTES;
+module.exports = Object.assign(ThumbnailService, { DEFAULT_MAX_BYTES });

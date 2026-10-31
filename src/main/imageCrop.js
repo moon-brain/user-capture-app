@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Image crop - crop a captured photo, keeping its original to start again
  *

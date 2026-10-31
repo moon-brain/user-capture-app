@@ -1,3 +1,4 @@
+// @ts-check
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
@@ -14,10 +15,10 @@ class HelpWindowManager {
 
   /**
    * Create the help window
-   * @param {Object} options - Window creation options
-   * @param {boolean} options.isDev - Whether running in development mode
-   * @param {{page?: string, anchor?: string}} options.target - Page to open at
-   * @returns {BrowserWindow} The created window
+   * @param {Object} [options] - Window creation options
+   * @param {boolean} [options.isDev] - Whether running in development mode
+   * @param {{page?: string, anchor?: string}} [options.target] - Page to open at
+   * @returns {import('electron').BrowserWindow} The created window
    */
   create(options = {}) {
     const { isDev = false, target = {} } = options;
@@ -67,8 +68,8 @@ class HelpWindowManager {
 
   /**
    * Open the help window at a page (create if it doesn't exist)
-   * @param {Object} options - Window creation options
-   * @returns {BrowserWindow} The window instance
+   * @param {Object} [options] - Window creation options
+   * @returns {import('electron').BrowserWindow} The window instance
    */
   open(options = {}) {
     if (!this.window) {
@@ -99,7 +100,7 @@ class HelpWindowManager {
 
   /**
    * Get the window instance
-   * @returns {BrowserWindow|null}
+   * @returns {import('electron').BrowserWindow|null}
    */
   getWindow() {
     return this.window;

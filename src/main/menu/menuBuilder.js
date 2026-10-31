@@ -1,3 +1,4 @@
+// @ts-check
 const { Menu, dialog } = require('electron');
 const { showAppMessage } = require('../appDialogs');
 const path = require('path');
@@ -44,6 +45,7 @@ class MenuBuilder {
    * Build and set the application menu
    */
   build() {
+    /** @type {Array<Electron.MenuItemConstructorOptions>} */
     const template = [
       this.buildFileMenu(),
       this.buildEditMenu(),
@@ -68,6 +70,7 @@ class MenuBuilder {
 
   /**
    * Build File menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildFileMenu() {
     // Build recent projects submenu
@@ -211,6 +214,7 @@ class MenuBuilder {
 
   /**
    * Build Edit menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildEditMenu() {
     return {
@@ -244,6 +248,7 @@ class MenuBuilder {
 
   /**
    * Build Project menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildProjectMenu() {
     return {
@@ -332,6 +337,7 @@ class MenuBuilder {
 
   /**
    * Build Camera menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildCameraMenu() {
     // Build camera selection submenu
@@ -387,8 +393,10 @@ class MenuBuilder {
   /**
    * Proyecto > Girar las fotos entrantes: for a camera that does not record
    * how it was held. Only with a project open, since it is kept in it.
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildIncomingRotationMenu() {
+    /** @type {Array<[number, string]>} */
     const choices = [
       [0, 'No girarlas'],
       [90, '90° a la derecha'],
@@ -414,6 +422,7 @@ class MenuBuilder {
   /**
    * Ver > Espacios de trabajo: one entry per workspace, the first nine with
    * Ctrl+1…9, and the one the view matches marked
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildWorkspacesMenu() {
     const entries = this.workspaces.map((workspace, index) => ({
@@ -450,6 +459,7 @@ class MenuBuilder {
 
   /**
    * Build View menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildViewMenu() {
     return {
@@ -601,6 +611,7 @@ class MenuBuilder {
    * Build Orla menu: the graduation orla service, which people pay for. The
    * photo roster PDF under Exportar is an administrative document, not this.
    * Only with the service on (Preferencias > Orla de graduación)
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildOrlaMenu() {
     return {
@@ -644,6 +655,7 @@ class MenuBuilder {
 
   /**
    * Build Help menu
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildHelpMenu() {
     return {
@@ -675,6 +687,7 @@ class MenuBuilder {
 
   /**
    * Build Developer menu (only in dev mode)
+   * @returns {Electron.MenuItemConstructorOptions}
    */
   buildDeveloperMenu() {
     return {

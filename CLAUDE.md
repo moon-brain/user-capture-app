@@ -50,6 +50,8 @@ Versiones instaladas según `package-lock.json`:
 - **electron-updater 6.8.11** y **electron-builder 26.18.0** (instalador NSIS
   y actualizaciones desde GitHub Releases)
 - **Jest 29.7.0** con `jest-environment-jsdom` (tests)
+- **TypeScript 7.0.2**, solo para comprobar tipos (`npm run typecheck`): no
+  compila nada, el código sigue siendo JavaScript con JSDoc
 - **commit-and-tag-version 13.3.0** (versión y CHANGELOG)
 - Auxiliar de recibos en **C#**, compilado con el `csc` de .NET Framework 4.x
   que trae Windows
@@ -65,7 +67,8 @@ Versiones instaladas según `package-lock.json`:
 - **Arrancar**: `npm run dev` (desarrollo, compila antes el auxiliar de
   recibos si puede) o `npm start`
 - **Probar**: `npm test`; `npm run test:coverage` para cobertura con umbrales
-- **Lint / typecheck**: no existen todavía (ver `NOTES.md`)
+- **Comprobar tipos**: `npm run typecheck`. Lint no existe todavía (ver
+  `NOTES.md`)
 - **Empaquetar**: `npm run dist:win`
 - **Publicar**: `npm run release` y luego `npm run release:publish` (con
   `GH_TOKEN`); detalle en «Versionado y publicación»
@@ -107,6 +110,12 @@ Versiones instaladas según `package-lock.json`:
   `tests/unit/main/dependencyBoundaries.test.js`: falla si se usa desde otro
   módulo, si un módulo de la lista deja de usarla o si se añade una
   dependencia sin entrada. El renderer no importa `electron`
+- Esos módulos, los que usan Electron y `ipc/context.js` empiezan por
+  `// @ts-check` (el mismo test lo exige), y `npm run typecheck` señala las
+  llamadas que rompa una actualización. `tsconfig.json` solo comprueba esos
+  archivos; para añadir uno, ponle la línea y corrige lo que salga. El objeto
+  que `main.js` pasa a los manejadores IPC se describe una sola vez, en
+  `ipc/context.js` (`IpcContext`): una propiedad nueva va ahí
 - Toda funcionalidad visible actualiza `src/help/` en el mismo commit
 - Commits en conventional commits, en inglés, **sin atribución a Claude ni a
   herramientas de IA**, y preguntando antes si ejecutar los tests
@@ -148,6 +157,7 @@ user-capture-app/
 ├── src/
 │   ├── main/                    # Proceso principal de Electron (Node.js)
 │   │   ├── ipc/                 # Manejadores IPC organizados por funcionalidad
+│   │   │   ├── context.js              # Tipo (IpcContext) del objeto que main.js pasa a todos los manejadores
 │   │   │   ├── exportHandlers.js       # Exportación de CSV, imágenes y PDF
 │   │   │   ├── helpHandlers.js         # Manual de uso: índice, páginas y búsqueda
 │   │   │   ├── miscHandlers.js         # Manejadores misceláneos (tags, diálogos, etc.)

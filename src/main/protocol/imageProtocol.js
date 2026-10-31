@@ -1,3 +1,4 @@
+// @ts-check
 const { protocol } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -56,7 +57,7 @@ function isInsideAllowedRoot(candidate, roots) {
  * cached thumbnail instead of the full resolution original.
  *
  * @param {Object} context
- * @param {ThumbnailService} context.thumbnailService
+ * @param {InstanceType<typeof import('../thumbnailService')>} context.thumbnailService
  * @param {Function} context.getAllowedRoots - Folders images may be served from
  * @param {Object} context.logger
  */

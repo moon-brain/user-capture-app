@@ -1,0 +1,23 @@
+{
+  // Type checking only: the application stays plain CommonJS JavaScript and
+  // nothing is compiled. `npm run typecheck` runs it.
+  //
+  // checkJs is off on purpose: only files that start with `// @ts-check` are
+  // checked, so the seam modules (where a library upgrade would break the
+  // code) can be checked first without touching the rest. Files they require
+  // still provide their types, they are just not reported on.
+  // dependencyBoundaries.test.js fails if a seam module loses its `// @ts-check`.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "lib": ["es2023", "dom"],
+    "types": ["node"],
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["main.js", "src/main/**/*.js", "src/preload/**/*.js"]
+}

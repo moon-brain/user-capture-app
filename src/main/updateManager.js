@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * UpdateManager - checks GitHub Releases for a newer version of the app
  *
@@ -27,7 +28,7 @@ const MAX_ERROR_LENGTH = 300;
  * @returns {string}
  */
 function shortMessage(error) {
-  const raw = (error && error.message) || String(error);
+  const raw = (typeof error === 'object' && error !== null && error.message) || String(error);
   const firstLine = raw.split(/\r?\n/)[0].trim();
   return firstLine.length > MAX_ERROR_LENGTH ? `${firstLine.slice(0, MAX_ERROR_LENGTH)}…` : firstLine;
 }
@@ -505,8 +506,9 @@ class UpdateManager {
   }
 }
 
-module.exports = UpdateManager;
-module.exports.DEFAULT_CHECK_INTERVAL_MS = DEFAULT_CHECK_INTERVAL_MS;
-module.exports.DEFAULT_STARTUP_DELAY_MS = DEFAULT_STARTUP_DELAY_MS;
-module.exports.DEFAULT_CHECK_TIMEOUT_MS = DEFAULT_CHECK_TIMEOUT_MS;
-module.exports.shortMessage = shortMessage;
+module.exports = Object.assign(UpdateManager, {
+  DEFAULT_CHECK_INTERVAL_MS,
+  DEFAULT_STARTUP_DELAY_MS,
+  DEFAULT_CHECK_TIMEOUT_MS,
+  shortMessage
+});

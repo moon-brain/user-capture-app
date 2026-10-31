@@ -1,3 +1,4 @@
+// @ts-check
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
@@ -11,9 +12,9 @@ class ImageGridWindowManager {
 
   /**
    * Create the image grid window
-   * @param {Object} options - Window creation options
-   * @param {boolean} options.isDev - Whether running in development mode
-   * @returns {BrowserWindow} The created window
+   * @param {Object} [options] - Window creation options
+   * @param {boolean} [options.isDev] - Whether running in development mode
+   * @returns {import('electron').BrowserWindow} The created window
    */
   create(options = {}) {
     const { isDev = false } = options;
@@ -54,8 +55,8 @@ class ImageGridWindowManager {
 
   /**
    * Open the image grid window (create if doesn't exist)
-   * @param {Object} options - Window creation options
-   * @returns {BrowserWindow} The window instance
+   * @param {Object} [options] - Window creation options
+   * @returns {import('electron').BrowserWindow} The window instance
    */
   open(options = {}) {
     if (!this.window) {
@@ -82,7 +83,7 @@ class ImageGridWindowManager {
 
   /**
    * Get the window instance
-   * @returns {BrowserWindow|null}
+   * @returns {import('electron').BrowserWindow|null}
    */
   getWindow() {
     return this.window;

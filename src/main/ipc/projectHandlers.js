@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Project-related IPC handlers
  */
@@ -34,12 +35,7 @@ function identifierKey(value) {
 
 /**
  * Register project-related IPC handlers
- * @param {Object} context - Shared context object
- * @param {BrowserWindow} context.mainWindow - Main window instance
- * @param {Object} context.logger - Logger instance
- * @param {Object} context.state - Application state (projectPath, dbManager, etc.)
- * @param {Function} context.addRecentProject - Function to add recent project
- * @param {Function} context.updateWindowTitle - Function to update window title
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerProjectHandlers(context) {
   const {

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * User, Group, and Image-related IPC handlers
  */
@@ -13,12 +14,7 @@ const { readRepositoryFilenames, findUserRepositoryImage } = require('./exportHa
 
 /**
  * Register user, group, and image-related IPC handlers
- * @param {Object} context - Shared context object
- * @param {BrowserWindow} context.mainWindow - Main window instance
- * @param {Object} context.logger - Logger instance
- * @param {Object} context.state - Application state
- * @param {Object} context.repositoryCacheManager - Repository cache manager
- * @param {Object} context.repositoryMirror - Repository mirror instance
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerUserGroupImageHandlers(context) {
   const { mainWindow, logger, state, repositoryCacheManager, repositoryMirror, imageGridWindow, groupCoverageWindow } = context;

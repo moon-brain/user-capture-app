@@ -1,3 +1,4 @@
+// @ts-check
 // verbose() captures a stack trace for every statement to improve error
 // messages. Worth it while developing, pure overhead in a release build.
 const sqlite3 = process.argv.includes('--dev')
@@ -24,7 +25,7 @@ function foldText(value) {
  * García, and staff can be found by their DNI.
  *
  * @param {string} search
- * @returns {Function} Predicate for a user row
+ * @returns {(user: Object) => boolean} Predicate for a user row
  */
 function matchesSearch(search) {
   const words = foldText(search).split(/\s+/).filter(Boolean);
@@ -40,6 +41,7 @@ class DatabaseManager {
     this.dbPath = dbPath;
   }
 
+  /** @returns {Promise<void>} */
   async initialize() {
     return new Promise((resolve, reject) => {
       this.db = new sqlite3.Database(this.dbPath, async (err) => {
@@ -62,6 +64,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async createTables() {
     return new Promise((resolve, reject) => {
       this.db.serialize(() => {
@@ -558,6 +561,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async unlinkImageFromUser(userId) {
     return new Promise((resolve, reject) => {
       this.db.run('UPDATE users SET image_path = NULL WHERE id = ?', [userId], (err) => {
@@ -567,6 +571,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async updateUser(userId, updates) {
     return new Promise((resolve, reject) => {
       const fields = [];
@@ -617,6 +622,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async deleteUser(userId) {
     return new Promise((resolve, reject) => {
       this.db.run('DELETE FROM users WHERE id = ?', [userId], (err) => {
@@ -626,6 +632,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async addImageTag(imagePath, tag) {
     return new Promise((resolve, reject) => {
       this.db.run('INSERT INTO image_tags (image_path, tag) VALUES (?, ?)', [imagePath, tag], (err) => {
@@ -644,6 +651,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async deleteImageTag(tagId) {
     return new Promise((resolve, reject) => {
       this.db.run('DELETE FROM image_tags WHERE id = ?', [tagId], (err) => {
@@ -791,6 +799,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async setProjectSetting(key, value) {
     return new Promise((resolve, reject) => {
       this.db.run(`
@@ -803,6 +812,7 @@ class DatabaseManager {
     });
   }
 
+  /** @returns {Promise<void>} */
   async deleteProjectSetting(key) {
     return new Promise((resolve, reject) => {
       this.db.run(`
@@ -815,6 +825,7 @@ class DatabaseManager {
   }
 
   // Orla payment methods
+  /** @returns {Promise<void>} */
   async markOrlaPaid(userId, isPaid) {
     return new Promise((resolve, reject) => {
       this.db.run('UPDATE users SET orla_paid = ? WHERE id = ?', [isPaid ? 1 : 0, userId], (err) => {
@@ -834,6 +845,7 @@ class DatabaseManager {
   }
 
   // Receipt printing methods
+  /** @returns {Promise<void>} */
   async markReceiptPrinted(userId, isPrinted) {
     return new Promise((resolve, reject) => {
       this.db.run('UPDATE users SET receipt_printed = ? WHERE id = ?', [isPrinted ? 1 : 0, userId], (err) => {

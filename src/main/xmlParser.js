@@ -1,3 +1,4 @@
+// @ts-check
 const fs = require('fs');
 const { XMLParser, XMLValidator } = require('fast-xml-parser');
 const { parseAcademicYear } = require('./academicYear');

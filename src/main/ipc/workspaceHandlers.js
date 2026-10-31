@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Workspace Handlers - IPC surface of the Ver > Espacios de trabajo window
  *
@@ -10,12 +11,7 @@
 const { ipcMain } = require('electron');
 
 /**
- * @param {Object} context
- * @param {Object} context.workspaceStore - WorkspaceStore
- * @param {Function} context.getCurrentView - () => display preferences
- * @param {Function} context.applyWorkspace - (id) => Promise<{success, error}>
- * @param {Function} context.refreshWorkspaces - () => void, menu and window
- * @param {Object} context.logger
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerWorkspaceHandlers(context) {
   const { workspaceStore, getCurrentView, applyWorkspace, refreshWorkspaces, logger } = context;

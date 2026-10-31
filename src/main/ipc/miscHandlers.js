@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Miscellaneous IPC handlers (dialog, camera, config, UI state, tags)
  */
@@ -46,13 +47,7 @@ function receiptPriceOrDefault(value) {
 
 /**
  * Register miscellaneous IPC handlers
- * @param {Object} context - Shared context object
- * @param {BrowserWindow} context.mainWindow - Main window instance
- * @param {Object} context.logger - Logger instance
- * @param {Object} context.state - Application state
- * @param {BrowserWindow} context.imageGridWindow - Image grid window instance
- * @param {BrowserWindow} context.repositoryGridWindow - Repository grid window instance
- * @param {Function} context.createMenu - Create menu function
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerMiscHandlers(context) {
   const { mainWindow: getMainWindow, logger, state, imageGridWindow, groupCoverageWindow, repositoryGridWindow, createMenu, reinitializeRepositoryMirror, repositoryMirror: getRepositoryMirror, thumbnailService } = context;
@@ -870,7 +865,7 @@ function registerMiscHandlers(context) {
       users.sort((a, b) => {
         if (!a.printed_date) return 1;
         if (!b.printed_date) return -1;
-        return new Date(b.printed_date) - new Date(a.printed_date);
+        return new Date(b.printed_date).getTime() - new Date(a.printed_date).getTime();
       });
 
       logger.info(`[Card Print] Found ${users.length} printed cards`);
@@ -1195,6 +1190,7 @@ function registerMiscHandlers(context) {
     await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(receiptHTML)}`);
 
     // Print options for thermal printer (80mm width)
+    /** @type {Electron.WebContentsPrintOptions} */
     const printOptions = {
       silent: true, // Silent printing (no dialog)
       printBackground: true,

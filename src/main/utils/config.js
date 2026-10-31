@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Global configuration management utilities
  */
@@ -163,8 +164,11 @@ function isOrlaServiceEnabled(config = loadGlobalConfig()) {
 
 // What the export dialog offered before it could be changed, and the limits
 // of its fields
+/** @type {{mode: 'copy'|'resize', boxSize: number, maxSize: number}} */
 const EXPORT_DEFAULTS = { mode: 'copy', boxSize: 800, maxSize: 500 };
+/** @type {[number, number]} */
 const EXPORT_BOX_SIZE_RANGE = [100, 4000];
+/** @type {[number, number]} */
 const EXPORT_MAX_SIZE_RANGE = [50, 5000];
 
 function numberInRange(value, [min, max], fallback) {

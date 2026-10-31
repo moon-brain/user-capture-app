@@ -48,6 +48,13 @@ const ALLOWED = {
 // only through the preload.
 const ELECTRON_ALLOWED_AREAS = ['main.js', 'src/main/', 'src/preload/'];
 
+// Seams that require no library themselves but sit on one: UpdateManager is
+// handed electron-updater's autoUpdater, and context.js holds the type of the
+// object main.js gives every IPC handler module
+const EXTRA_SEAMS = ['src/main/updateManager.js', 'src/main/ipc/context.js'];
+
+const TS_CHECK = /^\/\/ @ts-check\b/;
+
 const SOURCE_DIRS = ['src'];
 const SOURCE_FILES = ['main.js'];
 
@@ -154,6 +161,22 @@ describe('dependency boundaries', () => {
       // The table describes the code: remove a module once it stops using the library
       expect(stale).toEqual([]);
     });
+  });
+
+  it('should type-check every seam module', () => {
+    const seams = new Set([
+      ...Object.values(ALLOWED).flat(),
+      ...files.filter((file) => requiresByFile.get(file).has('electron')),
+      ...EXTRA_SEAMS
+    ]);
+
+    const unchecked = [...seams].filter(
+      (file) => !TS_CHECK.test(fs.readFileSync(path.join(ROOT, file), 'utf8'))
+    );
+
+    // Each must start with `// @ts-check`, so that `npm run typecheck` reports
+    // the calls a library upgrade breaks (see tsconfig.json)
+    expect(unchecked).toEqual([]);
   });
 
   it('should keep electron out of the renderer', () => {

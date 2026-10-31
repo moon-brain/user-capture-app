@@ -1,3 +1,4 @@
+// @ts-check
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
@@ -19,14 +20,14 @@ class ViewerMirrorWindowManager {
 
   /**
    * Create the mirror window
-   * @param {Object} options - Window creation options
-   * @param {boolean} options.isDev - Whether running in development mode
+   * @param {Object} [options] - Window creation options
+   * @param {boolean} [options.isDev] - Whether running in development mode
    * @param {Object} [options.bounds] - Content area it was last left with,
    *   already checked to fall on a connected display
    * @param {boolean} [options.fullScreen] - Whether it was left full screen
    * @param {Function} [options.onPlacementChange] - Receives { bounds, fullScreen }
    *   when the window closes, to open it there next time
-   * @returns {BrowserWindow} The created window
+   * @returns {import('electron').BrowserWindow} The created window
    */
   create(options = {}) {
     const { isDev = false, bounds = null, fullScreen = false, onPlacementChange = null } = options;
@@ -122,8 +123,8 @@ class ViewerMirrorWindowManager {
 
   /**
    * Open the mirror window (create if doesn't exist)
-   * @param {Object} options - Window creation options
-   * @returns {BrowserWindow} The window instance
+   * @param {Object} [options] - Window creation options
+   * @returns {import('electron').BrowserWindow} The window instance
    */
   open(options = {}) {
     if (!this.window) {
@@ -180,7 +181,7 @@ class ViewerMirrorWindowManager {
 
   /**
    * Get the window instance
-   * @returns {BrowserWindow|null}
+   * @returns {import('electron').BrowserWindow|null}
    */
   getWindow() {
     return this.window;

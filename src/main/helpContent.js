@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * User manual content
  *
@@ -100,7 +101,7 @@ function inlineText(token) {
 
 /**
  * Give every heading an id, unique within the page
- * @param {MarkdownIt} md
+ * @param {InstanceType<typeof MarkdownIt>} md
  */
 function headingIds(md) {
   md.core.ruler.push('heading_ids', (state) => {
@@ -125,12 +126,12 @@ function headingIds(md) {
  * navigate away from the manual; external ones are opened by the main process
  * in the user's browser.
  *
- * @param {MarkdownIt} md
+ * @param {InstanceType<typeof MarkdownIt>} md
  */
 function linkTargets(md) {
   md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     const token = tokens[idx];
-    const link = parseLink(token.attrGet('href') || '');
+    const link = parseLink(String(token.attrGet('href') || ''));
 
     if (link.type === 'page') {
       token.attrSet('href', '#');

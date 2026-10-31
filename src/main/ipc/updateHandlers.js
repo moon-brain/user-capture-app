@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Update Handlers - IPC surface of the update checker
  *
@@ -10,9 +11,7 @@
 const { ipcMain } = require('electron');
 
 /**
- * @param {Object} context
- * @param {Function} context.updateManager - () => UpdateManager
- * @param {Object} context.logger
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerUpdateHandlers(context) {
   const { logger } = context;

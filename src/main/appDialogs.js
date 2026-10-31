@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * App dialogs - messages and questions from the main process, shown with the
  * app's own modals instead of the system's message boxes
@@ -70,7 +71,7 @@ function request(window, payload, fallback) {
 /**
  * Tell the user something
  *
- * @param {BrowserWindow|null} window - the main window
+ * @param {import('electron').BrowserWindow|null} window - the main window
  * @param {Object} options
  * @param {string} options.title
  * @param {string} options.message
@@ -84,7 +85,7 @@ function showAppMessage(window, { title, message, detail = '' }) {
 /**
  * Ask the user to choose
  *
- * @param {BrowserWindow|null} window - the main window
+ * @param {import('electron').BrowserWindow|null} window - the main window
  * @param {Object} options
  * @param {string} options.title
  * @param {string} options.message

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * User manual IPC handlers
  */
@@ -6,9 +7,7 @@ const { loadManifest, renderPage, searchPages } = require('../helpContent');
 
 /**
  * Register the handlers the help window uses
- * @param {Object} context - Shared context object
- * @param {Object} context.logger - Logger instance
- * @param {Function} context.openHelpWindow - Opens the help window at a page
+ * @param {import('./context').IpcContext} context - Shared context, built in main.js
  */
 function registerHelpHandlers(context) {
   const { logger, openHelpWindow } = context;

@@ -1,3 +1,4 @@
+// @ts-check
 const { BrowserWindow } = require('electron');
 const path = require('path');
 const VersionManager = require('../utils/version');
@@ -25,9 +26,9 @@ class MainWindowManager {
 
   /**
    * Create the main window
-   * @param {Object} options - Window creation options
-   * @param {boolean} options.isDev - Whether running in development mode
-   * @returns {BrowserWindow} The created window
+   * @param {Object} [options] - Window creation options
+   * @param {boolean} [options.isDev] - Whether running in development mode
+   * @returns {import('electron').BrowserWindow} The created window
    */
   create(options = {}) {
     const { isDev = false } = options;
@@ -70,7 +71,7 @@ class MainWindowManager {
    * Returns null once the window is gone, so the callers' `if (mainWindow)`
    * checks are enough to keep them from sending to a destroyed window.
    *
-   * @returns {BrowserWindow|null}
+   * @returns {import('electron').BrowserWindow|null}
    */
   getWindow() {
     if (this.window && this.window.isDestroyed()) {

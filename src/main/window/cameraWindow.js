@@ -1,3 +1,4 @@
+// @ts-check
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
@@ -11,11 +12,11 @@ class CameraWindowManager {
 
   /**
    * Create the camera window
-   * @param {Object} options - Window creation options
-   * @param {boolean} options.isDev - Whether running in development mode
+   * @param {Object} [options] - Window creation options
+   * @param {boolean} [options.isDev] - Whether running in development mode
    * @param {Function} [options.onClosed] - Called once the window has closed,
    *   however it was closed
-   * @returns {BrowserWindow} The created window
+   * @returns {import('electron').BrowserWindow} The created window
    */
   create(options = {}) {
     const { isDev = false, onClosed = null } = options;
@@ -61,8 +62,8 @@ class CameraWindowManager {
 
   /**
    * Open the camera window (create if doesn't exist)
-   * @param {Object} options - Window creation options
-   * @returns {BrowserWindow} The window instance
+   * @param {Object} [options] - Window creation options
+   * @returns {import('electron').BrowserWindow} The window instance
    */
   open(options = {}) {
     if (!this.window) {
@@ -89,7 +90,7 @@ class CameraWindowManager {
 
   /**
    * Get the camera window instance
-   * @returns {BrowserWindow|null}
+   * @returns {import('electron').BrowserWindow|null}
    */
   getWindow() {
     return this.window;

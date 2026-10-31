@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * PDF reports on who still lacks a photo
  *
@@ -131,7 +132,7 @@ function hslToRgb(hue, saturation, lightness) {
 
 /**
  * Cut a text to fit a column, marking the cut
- * @param {PDFDocument} doc - with the font already set
+ * @param {PDFKit.PDFDocument} doc - with the font already set
  * @param {string} text
  * @param {number} width
  * @returns {string}
@@ -160,6 +161,11 @@ function finished(stream) {
 }
 
 /**
+ * A table column. The header is only needed by table(), which draws it.
+ * @typedef {{header?: string, width: number, align?: 'left'|'center'|'right'|'justify'}} ReportColumn
+ */
+
+/**
  * Drawing helpers shared by both reports
  */
 class ReportWriter {
@@ -168,7 +174,7 @@ class ReportWriter {
    * @param {string} options.filePath
    * @param {string} options.projectName - top right of every page
    * @param {Date} options.generatedAt
-   * @param {(doc: PDFDocument) => Promise<void>} [options.drawLogo]
+   * @param {(doc: PDFKit.PDFDocument) => Promise<void>} [options.drawLogo]
    */
   constructor({ filePath, projectName, generatedAt, drawLogo }) {
     const PDFDocument = require('pdfkit');
@@ -241,7 +247,7 @@ class ReportWriter {
 
   /**
    * Draw one row of cells
-   * @param {Array<{width: number, align?: string}>} columns
+   * @param {Array<ReportColumn>} columns
    * @param {Array<string|{text?: string, draw?: Function}>} cells
    * @param {Object} [options]
    */
@@ -266,7 +272,7 @@ class ReportWriter {
         doc.fillColor('black').font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10);
       }
 
-      const text = cell && typeof cell === 'object' ? cell.text : cell;
+      const text = typeof cell === 'string' ? cell : cell && cell.text;
       if (text !== undefined && text !== null && text !== '') {
         doc.text(fitText(doc, text, inner), x + TEXT_PADDING, top + (height - 10) / 2 + 1, {
           width: inner,
@@ -288,7 +294,7 @@ class ReportWriter {
   /**
    * A table that carries on over as many pages as it needs, repeating the
    * column headers on each one
-   * @param {Array<{header: string, width: number, align?: string}>} columns
+   * @param {Array<ReportColumn>} columns
    * @param {Array<Array>} rows
    * @param {Object} [options]
    * @param {Function} [options.continuation] - draws a line above the headers on a continued page
@@ -358,7 +364,7 @@ const MISSING_SOURCES = {
  * @param {string} [options.scopeLabel] - which users the list covers
  * @param {string} [options.projectName]
  * @param {Date} [options.generatedAt]
- * @param {Function} [options.drawLogo]
+ * @param {(doc: PDFKit.PDFDocument) => Promise<void>} [options.drawLogo]
  * @returns {Promise<void>}
  */
 async function writeMissingPhotosPdf(filePath, { source, groups, scopeLabel, projectName, generatedAt, drawLogo }) {
@@ -437,7 +443,7 @@ function coverageCell(group) {
  * @param {string} [options.repositoryNote] - why the repository is missing
  * @param {string} [options.projectName]
  * @param {Date} [options.generatedAt]
- * @param {Function} [options.drawLogo]
+ * @param {(doc: PDFKit.PDFDocument) => Promise<void>} [options.drawLogo]
  * @returns {Promise<void>}
  */
 async function writeGroupCoveragePdf(filePath, { captured, repository, repositoryNote, projectName, generatedAt, drawLogo }) {
@@ -461,6 +467,7 @@ async function writeGroupCoveragePdf(filePath, { captured, repository, repositor
   }
   report.doc.moveDown(1);
 
+  /** @type {Array<ReportColumn>} */
   const columns = [
     { header: 'Grupo', width: 75 },
     { header: 'Nombre', width: repository ? 130 : 200 },
