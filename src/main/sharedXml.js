@@ -251,7 +251,31 @@ async function publishAppliedXml({ dbManager, repositoryPath, xmlPath, options }
   }
 }
 
+/**
+ * Publish the open project's XML to a repository it has just been given
+ *
+ * Proyecto > Configurar depósito de imágenes (main.js) and the
+ * set-image-repository-path handler both end here. A new project gets its
+ * repository after it is created, so this is when its XML is first shared.
+ *
+ * @param {Object} dbManager
+ * @param {string|null} repositoryPath
+ * @returns {Promise<{ status: string, fileName?: string, error?: string }>}
+ */
+async function publishProjectXml(dbManager, repositoryPath) {
+  try {
+    return await publishAppliedXml({
+      dbManager,
+      repositoryPath,
+      xmlPath: await dbManager.getProjectSetting('xmlFilePath')
+    });
+  } catch (error) {
+    return { status: 'failed', error: error.message };
+  }
+}
+
 module.exports = {
+  publishProjectXml,
   SHARED_XML_FOLDER,
   hashXml,
   teamName,
