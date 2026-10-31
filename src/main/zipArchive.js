@@ -2,9 +2,14 @@
 /**
  * ZIP files for the exports
  *
- * This is the only module that uses archiver (dependencyBoundaries.test.js
- * checks it). zipArchive.test.js writes real ZIPs and reads them back, so an
- * upgrade of archiver is checked there.
+ * This is the only module that uses yazl (dependencyBoundaries.test.js checks
+ * it). zipArchive.test.js writes real ZIPs and reads them back with a reader
+ * of its own, so an upgrade or a change of library is checked there.
+ *
+ * It used archiver until 1.24. archiver 8 is published only as an ECMAScript
+ * module, which Jest 29 cannot load, so its contract tests could not have
+ * run; yazl is CommonJS with a single dependency, and the application only
+ * ever added whole files under a name, which is all yazl needs to do.
  *
  * Splitting into several ZIPs is decided by planZipArchives(), which only
  * works with names and sizes and does not touch the disk.
@@ -60,38 +65,45 @@ function planZipArchives(entries, maxBytes, baseName = 'imagenes') {
  * Write a ZIP with these files at its top level, under the names given
  *
  * Resolves once the file is completely written and closed. Rejects if any of
- * the files cannot be read, rather than leaving it out.
+ * the files cannot be read, rather than leaving it out, and then removes the
+ * half-written ZIP: a ZIP that is there has every photo.
  *
  * @param {string} zipPath
  * @param {Array<{path: string, name: string}>} entries
  * @returns {Promise<void>}
  */
 function writeZip(zipPath, entries) {
-  // Loaded on first use: it brings a stream toolchain that nothing needs
-  // until something is actually exported
-  const archiver = require('archiver');
+  // Loaded on first use: nothing needs it until something is exported
+  const yazl = require('yazl');
 
   return new Promise((resolve, reject) => {
+    const zip = new yazl.ZipFile();
     const output = fs.createWriteStream(zipPath);
-    const archive = archiver('zip', {
-      zlib: { level: 9 } // Maximum compression
-    });
+    let failed = false;
 
-    output.on('close', () => resolve());
-    output.on('error', reject);
-    archive.on('error', reject);
-    // archiver only warns about a file it cannot read (ENOENT) and finishes the
-    // ZIP without it: a photo would go missing without anyone knowing
-    archive.on('warning', (warning) => {
-      archive.abort();
-      reject(warning);
-    });
+    const fail = (error) => {
+      if (failed) return;
+      failed = true;
+      zip.outputStream.unpipe(output);
+      output.destroy();
+      // Once the handle is closed, so Windows lets it go
+      output.once('close', () => {
+        fs.rm(zipPath, { force: true }, () => reject(error));
+      });
+    };
 
-    archive.pipe(output);
+    output.on('close', () => {
+      if (!failed) resolve();
+    });
+    output.on('error', fail);
+    // A file that cannot be read (ENOENT) is an error in yazl, not a warning
+    zip.on('error', fail);
+
+    zip.outputStream.pipe(output);
     for (const entry of entries) {
-      archive.file(entry.path, { name: entry.name });
+      zip.addFile(entry.path, entry.name, { compressionLevel: 9 });
     }
-    archive.finalize();
+    zip.end();
   });
 }
 

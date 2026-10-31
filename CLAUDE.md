@@ -46,7 +46,7 @@ Versiones instaladas según `package-lock.json`:
 - **Electron 44.10.0**, JavaScript CommonJS sin TypeScript ni bundler
 - **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.35.5** (imágenes)
 - **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.7** (XML)
-- **pdfkit 0.17.2** (PDF), **archiver 7.0.1** (ZIP), **markdown-it 15.0.3** (manual)
+- **pdfkit 0.17.2** (PDF), **yazl 3.3.1** (ZIP), **markdown-it 15.0.3** (manual)
 - **electron-updater 6.8.11** y **electron-builder 26.18.0** (instalador NSIS
   y actualizaciones desde GitHub Releases)
 - **Jest 29.7.0** con `jest-environment-jsdom` (tests)
@@ -141,6 +141,13 @@ Versiones instaladas según `package-lock.json`:
   compartido y otro proyecto puede necesitarlas
 - **Las Releases de GitHub son el servidor de actualizaciones**; el workflow de
   CI está desactivado («SDK compilation issues») y se publica desde local
+- **Los ZIP se escriben con yazl, no con archiver**: archiver 8 se publica
+  solo como módulo ESM y Jest 29 no puede cargarlo, así que sus tests de
+  contrato no habrían podido ejecutarse. yazl es CommonJS, con una sola
+  dependencia, y la aplicación solo añade archivos enteros con un nombre. Lo
+  mismo pasará con otras bibliotecas que pasen a ser solo ESM (chokidar 5):
+  el que lo impide es Jest 29, no la aplicación, que en el Node 24 de Electron
+  sí puede cargarlas
 - **El instalador no está firmado**: se evaluó y se aplazó por coste; hoy no
   compensa la inversión. Windows SmartScreen avisará al instalar
 
@@ -202,7 +209,7 @@ user-capture-app/
 │   │   ├── updateManager.js     # Envoltorio de electron-updater (comprobar, descargar, instalar)
 │   │   ├── workspaces.js        # Espacios de trabajo: combinaciones guardadas de las opciones de Ver
 │   │   ├── xmlParser.js         # Parseo de archivos XML de usuarios
-│   │   └── zipArchive.js        # Fachada de archiver: reparto en varios ZIP y escritura
+│   │   └── zipArchive.js        # Fachada de yazl: reparto en varios ZIP y escritura
 │   ├── help/          # Manual de uso en Markdown (pages.json + una página por área)
 │   ├── preload/       # Scripts preload (comunicación segura entre procesos)
 │   ├── renderer/      # Proceso de renderizado (interfaz de usuario)

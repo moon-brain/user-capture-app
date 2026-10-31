@@ -43,19 +43,19 @@
   ],
   "author": "Víctor Pineda Ribes",
   "dependencies": {
-    "archiver": "^7.0.1",
     "chokidar": "^3.6.0",
     "electron-updater": "^6.8.11",
     "fast-xml-parser": "^4.5.7",
     "markdown-it": "^15.0.3",
     "pdfkit": "^0.17.2",
     "sharp": "^0.35.5",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "yazl": "^3.3.1"
   },
   "devDependencies": {
-    "@types/archiver": "7.0.0",
     "@types/node": "24.19.2",
     "@types/pdfkit": "0.17.7",
+    "@types/yazl": "3.3.1",
     "acorn": "8.15.0",
     "commit-and-tag-version": "^13.3.0",
     "cross-env": "^10.1.0",

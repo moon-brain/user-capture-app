@@ -36,7 +36,7 @@ const ALLOWED = {
   // The life of every PDF (A4 pages, errors, finishing), checked by pdfDocument.test.js
   pdfkit: ['src/main/pdfDocument.js'],
   // ZIP files, checked by zipArchive.test.js
-  archiver: ['src/main/zipArchive.js']
+  yazl: ['src/main/zipArchive.js']
 };
 
 // Electron is everywhere in the main process by nature, so it has a rule by

@@ -2,10 +2,11 @@
  * zipArchive.js: how files are split into ZIPs, and the ZIPs archiver writes
  *
  * planZipArchives() is pure and tested on its own. writeZip() runs against
- * the real archiver and the ZIPs are read back with a minimal reader written
- * here, so that what archiver writes is checked without trusting archiver:
- * every file is at the top level under its name and decompresses to the same
- * bytes. Run these first after upgrading archiver.
+ * the real ZIP library (yazl) and the ZIPs are read back with a minimal reader
+ * of our own (tests/helpers/readZip.js), so what the library writes is
+ * checked without trusting it: every file is at the top level under its name
+ * and decompresses to the same bytes. Run these first after upgrading or
+ * replacing the library.
  *
  * @jest-environment node
  */
@@ -67,7 +68,7 @@ describe('zipArchive', () => {
     });
   });
 
-  describe('writeZip() (contract with archiver)', () => {
+  describe('writeZip() (contract with the ZIP library)', () => {
     const dir = path.join(os.tmpdir(), `edu-capture-zip-tests-${process.pid}`);
 
     beforeEach(() => {
@@ -115,9 +116,17 @@ describe('zipArchive', () => {
       expect(readZip(zipPath)).toEqual([]);
     });
 
-    it('should fail, not hang, when a file to add is missing', async () => {
-      await expect(writeZip(path.join(dir, 'out.zip'), [{ path: path.join(dir, 'nope.jpg'), name: 'x.jpg' }]))
-        .rejects.toThrow();
+    it('should fail, not hang, when a file to add is missing, and leave no ZIP', async () => {
+      fs.writeFileSync(path.join(dir, 'source', 'a.bin'), crypto.randomBytes(5000));
+      const zipPath = path.join(dir, 'out.zip');
+
+      await expect(writeZip(zipPath, [
+        { path: path.join(dir, 'source', 'a.bin'), name: 'a.jpg' },
+        { path: path.join(dir, 'nope.jpg'), name: 'x.jpg' }
+      ])).rejects.toThrow(/ENOENT/);
+
+      // A ZIP that is there has every photo
+      expect(fs.existsSync(zipPath)).toBe(false);
     });
 
     it('should fail, not hang, when the ZIP cannot be written', async () => {
