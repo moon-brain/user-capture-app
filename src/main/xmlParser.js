@@ -5,6 +5,51 @@ const { parseAcademicYear } = require('./academicYear');
 
 const NO_USERS = 'El archivo XML no contiene ningún usuario (alumnos, docentes ni no docentes)';
 
+// The five characters that mean something in XML go back as their named
+// entity, which the parser decodes; written raw they would break the markup
+const MARKUP = { 34: '&quot;', 38: '&amp;', 39: '&apos;', 60: '&lt;', 62: '&gt;' };
+
+/**
+ * Whether XML 1.0 allows this character in a document
+ * @param {number} code
+ * @returns {boolean}
+ */
+function isXmlChar(code) {
+  return code === 0x9 || code === 0xA || code === 0xD ||
+    (code >= 0x20 && code <= 0xD7FF) ||
+    (code >= 0xE000 && code <= 0xFFFD) ||
+    (code >= 0x10000 && code <= 0x10FFFF);
+}
+
+/**
+ * Turn the numeric character references (&#209; or &#xD1;) into the
+ * characters they stand for
+ *
+ * They are standard XML, but fast-xml-parser only decodes them together with
+ * the HTML entities (its htmlEntities option, deprecated in v5), so "Pe&#241;a"
+ * came out as written. This runs on the text before parsing:
+ *
+ * - "&amp;#209;", someone writing the text "&#209;", is left alone: in the raw
+ *   file there is no "&#" there;
+ * - references to the markup characters become their named entity;
+ * - a reference to a character XML does not allow is left as written;
+ * - CDATA sections and comments are not touched, their content is literal.
+ *
+ * @param {string} xml
+ * @returns {string}
+ */
+function decodeCharacterReferences(xml) {
+  return xml.replace(
+    /<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->|&#(?:([0-9]+)|x([0-9a-fA-F]+));/g,
+    (match, decimal, hex) => {
+      if (decimal === undefined && hex === undefined) return match;
+      const code = decimal !== undefined ? parseInt(decimal, 10) : parseInt(hex, 16);
+      if (!isXmlChar(code)) return match;
+      return MARKUP[code] || String.fromCodePoint(code);
+    }
+  );
+}
+
 class XMLUserParser {
   constructor(xmlPath) {
     this.xmlPath = xmlPath;
@@ -32,7 +77,8 @@ class XMLUserParser {
         throw new Error(`El archivo XML no es válido (línea ${line}, columna ${col}): ${msg}`);
       }
 
-      const jsonData = this.parser.parse(xmlData);
+      // Validated as the file is, so a reported line and column point at it
+      const jsonData = this.parser.parse(decodeCharacterReferences(xmlData));
 
       const result = {
         groups: [],
@@ -172,4 +218,4 @@ class XMLUserParser {
   }
 }
 
-module.exports = XMLUserParser;
+module.exports = Object.assign(XMLUserParser, { decodeCharacterReferences });

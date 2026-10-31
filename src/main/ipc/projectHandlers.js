@@ -22,6 +22,9 @@ const { parseAcademicYear } = require('../academicYear');
  * their photo link. Applying the update then stores the identifier as the XML
  * has it, zeros included.
  *
+ * The same for character references: until 1.25 they were stored as written
+ * ("&#49;23"), and the parser now decodes them ("123").
+ *
  * @param {string|number|null|undefined} value
  * @returns {string}
  */
@@ -29,7 +32,7 @@ function identifierKey(value) {
   if (value === null || value === undefined) {
     return '';
   }
-  const text = String(value).trim();
+  const text = XMLParser.decodeCharacterReferences(String(value)).trim();
   return /^\d+$/.test(text) ? (text.replace(/^0+/, '') || '0') : text;
 }
 
