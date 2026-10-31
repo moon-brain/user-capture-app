@@ -31,11 +31,8 @@ const ALLOWED = {
   'markdown-it': ['src/main/helpContent.js'],
   // main.js hands autoUpdater to UpdateManager, which never requires it
   'electron-updater': ['main.js'],
-  sharp: [
-    'src/main/imageCrop.js',
-    'src/main/thumbnailService.js',
-    'src/main/ipc/exportHandlers.js'
-  ],
+  // The image facade: every image operation, checked by imageProcessing.test.js
+  sharp: ['src/main/imageProcessing.js'],
   pdfkit: [
     'src/main/photoReports.js',
     'src/main/ipc/exportHandlers.js'

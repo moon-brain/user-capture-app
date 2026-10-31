@@ -187,7 +187,8 @@ user-capture-app/
 │   │   ├── database.js          # Gestión de base de datos SQLite
 │   │   ├── folderWatcher.js     # Vigilancia de carpetas ingest/imports
 │   │   ├── helpContent.js       # Lectura, conversión y búsqueda del manual (Markdown)
-│   │   ├── imageManager.js      # Procesamiento y gestión de imágenes
+│   │   ├── imageManager.js      # Listado de las fotos de imports, con caché
+│   │   ├── imageProcessing.js   # Fachada de sharp: toda operación con imágenes (giro, ajuste, recorte, logotipo)
 │   │   ├── imageCrop.js         # Recortar una foto capturada guardando su original, y restaurarlo
 │   │   ├── imageOrientation.js  # Leer y cambiar la orientación EXIF de un JPEG sin recomprimir
 │   │   ├── ingestFolder.js      # Carpeta de entrada (ingest) del proyecto y su vigilante
@@ -475,7 +476,13 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
 ### Módulos Core
 - **database.js**: Gestión completa de SQLite (usuarios, grupos, imágenes, tags)
 - **folderWatcher.js**: Vigilancia de carpetas ingest/imports con chokidar
-- **imageManager.js**: Procesamiento de imágenes con sharp (validación, redimensionamiento)
+- **imageManager.js**: Listado de las fotos de `imports`, con caché que invalida el vigilante
+- **imageProcessing.js**: El único módulo que usa sharp. Cada función es una
+  operación de la aplicación (`fitInsideJpeg` para exportaciones y miniaturas,
+  `coverJpeg` para el listado con fotografías, `cropJpeg`, `fitHeightPng` para
+  el logotipo...), no de sharp, y todas devuelven la foto derecha según su EXIF.
+  `tests/unit/main/imageProcessing.test.js` las ejecuta contra sharp real y
+  mira los píxeles: es lo primero que hay que pasar al actualizar sharp
 - **ingestFolder.js**: Carpeta de entrada de cada proyecto. Por defecto es
   `ingest` dentro del proyecto, pero se puede redirigir a cualquier otra
   (Proyecto > Configurar carpeta de entrada, igual que el depósito) para que

@@ -18,7 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+const imaging = require('./imageProcessing');
 
 const ORIGINALS_FOLDER = 'Originales';
 const JPEG_QUALITY = 95;
@@ -40,19 +40,9 @@ function hasOriginal(imagePath) {
   return fs.existsSync(originalPathFor(imagePath));
 }
 
-/**
- * Width and height of a photo as shown, after its EXIF orientation
- * @param {Buffer|string} input
- * @returns {Promise<{width: number, height: number}>}
- */
-async function displaySize(input) {
-  const metadata = await sharp(input).metadata();
-  // Orientations 5 to 8 turn the photo a quarter: width and height swap
-  const swapped = metadata.orientation >= 5 && metadata.orientation <= 8;
-  return swapped
-    ? { width: metadata.height, height: metadata.width }
-    : { width: metadata.width, height: metadata.height };
-}
+// Width and height of a photo as shown, after its EXIF orientation. Still
+// exported from here, where the crop handlers have always taken it
+const { displaySize } = imaging;
 
 /**
  * The rectangle in whole pixels, or an error if it does not fit the photo
@@ -112,13 +102,7 @@ async function cropImageFile(imagePath, rect) {
   const source = await fs.promises.readFile(originalPath);
   const area = checkRect(rect, await displaySize(source));
 
-  const output = await sharp(source)
-    .rotate()
-    .extract(area)
-    .keepExif()
-    .keepIccProfile()
-    .jpeg({ quality: JPEG_QUALITY, chromaSubsampling: '4:4:4' })
-    .toBuffer();
+  const output = await imaging.cropJpeg(source, area, { quality: JPEG_QUALITY });
 
   await replaceFile(imagePath, output);
   return { width: area.width, height: area.height };

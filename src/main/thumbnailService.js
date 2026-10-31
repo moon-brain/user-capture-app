@@ -2,6 +2,8 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+// It loads sharp on first use: thumbnails are not needed at boot
+const imaging = require('./imageProcessing');
 
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg']);
 
@@ -142,21 +144,13 @@ class ThumbnailService {
   async generate(sourcePath, cachePath, size, stats) {
     await this.ensureCacheDir();
 
-    // Required here rather than at the top of the file: sharp is a native
-    // module and loading it is slow enough to be worth deferring until an
-    // image actually needs resizing
-    const sharp = require('sharp');
-
     // Written under a temporary name first, so an interrupted write cannot
     // leave a truncated file that later reads would accept as a thumbnail
     const tempPath = `${cachePath}.${process.pid}.tmp`;
 
     try {
-      await sharp(sourcePath)
-        .rotate()
-        .resize(size, size, { fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 80 })
-        .toFile(tempPath);
+      const thumbnail = await imaging.fitInsideJpeg(sourcePath, { box: size, quality: 80 });
+      await fs.promises.writeFile(tempPath, thumbnail);
 
       // Stamped before the rename, so the file is never in place carrying the
       // wrong time: that time is what says which photo it was built from

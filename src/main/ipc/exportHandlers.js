@@ -15,19 +15,8 @@ const {
 const { capitalizeWords } = require('../utils/formatting');
 const { compareUsersByName } = require('../utils/nameOrder');
 const { groupMissingPhotos, writeMissingPhotosPdf, writeGroupCoveragePdf } = require('../photoReports');
-
-// Loaded on first use rather than at startup. sharp is a native module built on
-// libvips and archiver drags in a stream toolchain, but neither is needed until
-// something is actually exported, and this module is required while the app
-// boots.
-let sharpModule = null;
-function sharp(...args) {
-  if (!sharpModule) {
-    sharpModule = require('sharp');
-  }
-
-  return sharpModule(...args);
-}
+// It loads sharp on first use, so requiring it here costs nothing at boot
+const imaging = require('../imageProcessing');
 
 // How many images to process at once. sharp releases the event loop while it
 // works, but libuv's thread pool is four threads by default, so going much
@@ -442,30 +431,13 @@ async function writeExportedImage(sourcePath, destPath, exportOptions, logger, w
     return;
   }
 
-  const metadata = await sharp(sourceBuffer).rotate().metadata();
-  const needsResize =
-    metadata.width > exportOptions.boxSize || metadata.height > exportOptions.boxSize;
-
-  const pipeline = () => {
-    const instance = sharp(sourceBuffer).rotate();
-
-    if (needsResize) {
-      return instance.resize(exportOptions.boxSize, exportOptions.boxSize, {
-        fit: 'inside',
-        withoutEnlargement: true
-      });
-    }
-
-    return instance;
-  };
-
   const maxSizeBytes = exportOptions.maxSizeKB * 1024;
   let quality = 90;
   let outputBuffer;
 
   // Step the quality down until the file fits, as before
   do {
-    outputBuffer = await pipeline().jpeg({ quality }).toBuffer();
+    outputBuffer = await imaging.fitInsideJpeg(sourceBuffer, { box: exportOptions.boxSize, quality });
 
     if (outputBuffer.length <= maxSizeBytes || quality <= 60) {
       break;
@@ -481,10 +453,10 @@ async function writeExportedImage(sourcePath, destPath, exportOptions, logger, w
 /**
  * Bytes to write for a "copy the original" export
  *
- * sharp's toFile() re-encodes whatever it is given: a JPEG copied that way came
- * out at quality 80 with 4:2:0 subsampling and no metadata, which is not a
- * copy. The rotate() it was there for only matters when the EXIF orientation
- * says so, and most captures come from a canvas with no EXIF at all.
+ * Re-encoding a JPEG that was copied this way used to bring it out at quality
+ * 80 with 4:2:0 subsampling and no metadata, which is not a copy. Turning the
+ * pixels only matters when the EXIF orientation says so, and most captures
+ * come from a canvas with no EXIF at all.
  *
  * @param {Buffer} sourceBuffer
  * @returns {Promise<Buffer>}
@@ -492,17 +464,15 @@ async function writeExportedImage(sourcePath, destPath, exportOptions, logger, w
 async function buildOriginalCopy(sourceBuffer) {
   // Reads the header only, and throws on a truncated file, which is worth
   // knowing before it reaches the repository
-  const metadata = await sharp(sourceBuffer).metadata();
+  const { format, orientation } = await imaging.readImageInfo(sourceBuffer);
 
-  const isUpright = !metadata.orientation || metadata.orientation === 1;
-
-  if (metadata.format === 'jpeg' && isUpright) {
+  if (format === 'jpeg' && orientation === 1) {
     // The very bytes that were read: an exact copy
     return sourceBuffer;
   }
 
-  // Rotating cannot avoid re-encoding with sharp, so keep the loss residual
-  return sharp(sourceBuffer).rotate().jpeg({ quality: 95 }).toBuffer();
+  // Turning cannot avoid re-encoding, so keep the loss residual
+  return imaging.encodeUprightJpeg(sourceBuffer, { quality: 95 });
 }
 
 /**
@@ -771,7 +741,7 @@ function matchRepositoryImages(users, repositoryFiles) {
 }
 
 // The logo is the same on every page of every PDF, but preparing it means
-// reading the config, checking the file and two sharp passes. Keyed by path and
+// reading the config, checking the file and resizing it. Keyed by path and
 // modification time so replacing the logo still takes effect.
 let cachedLogo = null;
 
@@ -801,20 +771,15 @@ async function loadInstitutionLogo(logger) {
     return cachedLogo;
   }
 
-  // Resize to max height of 60pt while maintaining aspect ratio,
-  // and convert to PNG for transparency support
-  const buffer = await sharp(logoPath)
-    .resize({ height: 180, withoutEnlargement: true }) // 3x for better quality
-    .png()
-    .toBuffer();
-
-  const metadata = await sharp(buffer).metadata();
+  // Drawn at most 60pt high: prepared at 3x for quality, as a PNG to keep
+  // its transparency
+  const { buffer, width, height } = await imaging.fitHeightPng(logoPath, { height: 180 });
 
   cachedLogo = {
     path: logoPath,
     mtimeMs: stats.mtimeMs,
     buffer,
-    aspectRatio: metadata.width / metadata.height
+    aspectRatio: width / height
   };
 
   logger.info(`[addLogoToPDFPage] Logo prepared from ${logoPath}`);
@@ -1914,16 +1879,13 @@ function registerExportHandlers(context) {
           // Draw image or placeholder
           if (imagePath && fs.existsSync(imagePath)) {
             try {
-              // Load and resize image to fit in 3:4 vertical portrait
-              // rotate() without parameters auto-rotates based on EXIF orientation
-              // Process at higher resolution (3x display size) for better quality in PDF
-              const processingWidth = imageWidth * 3; // 216px for 72pt display
-              const processingHeight = imageHeight * 3; // 288px for 96pt display
-              const imageBuffer = await sharp(imagePath)
-                .rotate()
-                .resize(processingWidth, processingHeight, { fit: 'cover' })
-                .jpeg({ quality: imageQuality })
-                .toBuffer();
+              // Filling the 3:4 portrait cell, upright, at 3x the size it is
+              // drawn for quality in the PDF
+              const imageBuffer = await imaging.coverJpeg(imagePath, {
+                width: imageWidth * 3, // 216px for 72pt display
+                height: imageHeight * 3, // 288px for 96pt display
+                quality: imageQuality
+              });
 
               doc.image(imageBuffer, currentX, currentY, {
                 width: imageWidth,
