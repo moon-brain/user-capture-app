@@ -193,6 +193,7 @@ user-capture-app/
 │   │   ├── imageOrientation.js  # Leer y cambiar la orientación EXIF de un JPEG sin recomprimir
 │   │   ├── ingestFolder.js      # Carpeta de entrada (ingest) del proyecto y su vigilante
 │   │   ├── logger.js            # Sistema de logging
+│   │   ├── pdfDocument.js       # Fachada de pdfkit: crear un PDF A4, añadir páginas y esperar a que se escriba
 │   │   ├── pendingRequests.js   # Solicitudes de carnet y publicación: listar, revisar y archivar
 │   │   ├── photoReports.js      # PDF de usuarios sin foto y de fotografías por grupo
 │   │   ├── receiptPrinter.js    # Impresión de recibos con el auxiliar de Windows (native/receipt-printer)
@@ -478,6 +479,14 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
 - **database.js**: Gestión completa de SQLite (usuarios, grupos, imágenes, tags)
 - **folderWatcher.js**: Vigilancia de carpetas ingest/imports con chokidar
 - **imageManager.js**: Listado de las fotos de `imports`, con caché que invalida el vigilante
+- **pdfDocument.js**: El único módulo que crea documentos de pdfkit.
+  `createPdf(ruta, { margins, bufferPages })` devuelve `{ doc, addPage, finish }`:
+  todas las páginas en A4 (`addPage()` de pdfkit con opciones sustituye las del
+  documento y sin tamaño sale Letter), los errores del archivo escuchados desde
+  el principio (una carpeta desaparecida era una excepción sin capturar y la
+  exportación no respondía) y `finish()` espera a que esté escrito. El dibujo
+  es la API de pdfkit sobre `doc`. Los tests leen los PDF con
+  `tests/helpers/readPdf.js` (páginas, tamaño, imágenes y texto)
 - **imageProcessing.js**: El único módulo que usa sharp. Cada función es una
   operación de la aplicación (`fitInsideJpeg` para exportaciones y miniaturas,
   `coverJpeg` para el listado con fotografías, `cropJpeg`, `fitHeightPng` para
@@ -1624,8 +1633,7 @@ ya apunta a él.
   dejar «orla» a la orla de graduación
 - **Formato**: Un PDF por grupo, `Listado_fotos_{código}_{AAAAMMDDHHMMSS}.pdf`
   (la misma marca para todos los grupos de una exportación), todas las
-  páginas A4 (`addPage()` de PDFKit sustituye las opciones del documento, así
-  que hay que repetir `size` y `layout`)
+  páginas A4 (las añade `createPdf().addPage()`, ver `pdfDocument.js`)
 - **Layout**: rejilla de 6 × 6 (36 fotos por página)
 - **Contenido**: Foto + nombre completo debajo
 - **Ámbito**: todos los grupos o uno solo, elegido en su propio diálogo

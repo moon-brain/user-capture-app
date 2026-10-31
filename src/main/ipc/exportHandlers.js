@@ -18,6 +18,7 @@ const { groupMissingPhotos, writeMissingPhotosPdf, writeGroupCoveragePdf } = req
 // It loads sharp on first use, so requiring it here costs nothing at boot
 const imaging = require('../imageProcessing');
 const { planZipArchives, writeZip } = require('../zipArchive');
+const { createPdf } = require('../pdfDocument');
 
 // How many images to process at once. sharp releases the event loop while it
 // works, but libuv's thread pool is four threads by default, so going much
@@ -1679,8 +1680,6 @@ function registerExportHandlers(context) {
   // Photo roster PDF: everyone in a group with their photo, so staff can put a
   // name to a face. Not the graduation orla, which is a paid service
   ipcMain.handle('export-photo-roster-pdf', async (event, { exportPath, photoSource, imageQuality, usersByGroup }) => {
-    const PDFDocument = require('pdfkit');
-
     try {
       logger.section('PHOTO ROSTER PDF EXPORT');
       logger.info(`Export path: ${exportPath}`);
@@ -1734,20 +1733,14 @@ function registerExportHandlers(context) {
         // Center vertically on subsequent pages (without title, with extra margin)
         const topMarginFullPage = Math.floor((pageHeightPt - gridHeight) / 2) + 20;
 
-        // Create PDF document with calculated margins for first page
-        const doc = new PDFDocument({
-          size: 'A4',
-          layout: 'portrait',
-          margins: { top: topMarginFirstPage, bottom: topMarginFirstPage, left: 20, right: 20 }
-        });
-
-        // Create output file path
         const fileName = stampedPdfName(`Listado_fotos_${groupCode}`, generatedAt);
         const filePath = path.join(exportPath, fileName);
 
-        // Pipe PDF to file
-        const writeStream = fs.createWriteStream(filePath);
-        doc.pipe(writeStream);
+        // With the margins calculated for the first page
+        const pdf = createPdf(filePath, {
+          margins: { top: topMarginFirstPage, bottom: topMarginFirstPage, left: 20, right: 20 }
+        });
+        const { doc } = pdf;
 
         // Calculate starting X position to center the grid (needed for logo alignment)
         const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -1786,13 +1779,7 @@ function registerExportHandlers(context) {
 
             if (spaceAvailable < spaceNeeded) {
               // Not enough space, create new page
-              // addPage() replaces the document options instead of merging them:
-              // without size and layout, PDFKit falls back to Letter
-              doc.addPage({
-                size: 'A4',
-                layout: 'portrait',
-                margins: { top: topMarginFullPage, bottom: topMarginFullPage, left: 20, right: 20 }
-              });
+              pdf.addPage({ top: topMarginFullPage, bottom: topMarginFullPage, left: 20, right: 20 });
               // Add logo to new page (aligned with first column of photos)
               await addLogoToPDFPage(doc, logger, { useFixedPosition: true, alignX: startX });
               // Start grid below logo (logo is at y=20 with height=60pt, so start at y=90 with some spacing)
@@ -1901,14 +1888,7 @@ function registerExportHandlers(context) {
           }
         }
 
-        // Finalize PDF
-        doc.end();
-
-        // Wait for write stream to finish
-        await new Promise((resolve, reject) => {
-          writeStream.on('finish', () => resolve(undefined));
-          writeStream.on('error', reject);
-        });
+        await pdf.finish();
 
         logger.success(`Generated PDF: ${fileName}`);
         generatedFiles.push(fileName);
@@ -1930,8 +1910,6 @@ function registerExportHandlers(context) {
 
   // Export Paid Users List PDF (all groups in one document)
   ipcMain.handle('export-paid-users-list-pdf', async (event, { exportPath, usersByGroup }) => {
-    const PDFDocument = require('pdfkit');
-
     try {
       logger.section('PAID USERS LIST PDF EXPORT');
       logger.info(`Export path: ${exportPath}`);
@@ -1939,16 +1917,12 @@ function registerExportHandlers(context) {
 
       const groupCodes = Object.keys(usersByGroup).sort();
 
-      // Create single PDF for all groups
-      const doc = new PDFDocument({
-        size: 'A4',
+      // A single PDF for all groups
+      const fileName = stampedPdfName('Alumnos_Pagados');
+      const pdf = createPdf(path.join(exportPath, fileName), {
         margins: { top: 50, bottom: 50, left: 50, right: 50 }
       });
-
-      const fileName = stampedPdfName('Alumnos_Pagados');
-      const filePath = path.join(exportPath, fileName);
-      const stream = fs.createWriteStream(filePath);
-      doc.pipe(stream);
+      const { doc } = pdf;
 
       // Add logo to first page
       await addLogoToPDFPage(doc, logger);
@@ -1994,7 +1968,7 @@ function registerExportHandlers(context) {
 
           // Check if we need a new page
           if (doc.y > 750) {
-            doc.addPage();
+            pdf.addPage();
             // Add logo to new page
             await addLogoToPDFPage(doc, logger);
             // Move cursor below logo (logo at y=30 with height=60pt, so start at y=120)
@@ -2018,7 +1992,7 @@ function registerExportHandlers(context) {
       }
 
       // Add final page with total
-      doc.addPage();
+      pdf.addPage();
       // Add logo to summary page
       await addLogoToPDFPage(doc, logger);
       // Move cursor below logo
@@ -2035,9 +2009,7 @@ function registerExportHandlers(context) {
 
       doc.text(`Total de alumnos: ${totalUsers}`, 50);
 
-      doc.end();
-
-      await new Promise((resolve) => stream.on('finish', () => resolve(undefined)));
+      await pdf.finish();
 
       logger.section('PAID USERS LIST PDF EXPORT COMPLETED');
       logger.success(`Generated PDF: ${fileName}`);

@@ -33,10 +33,8 @@ const ALLOWED = {
   'electron-updater': ['main.js'],
   // The image facade: every image operation, checked by imageProcessing.test.js
   sharp: ['src/main/imageProcessing.js'],
-  pdfkit: [
-    'src/main/photoReports.js',
-    'src/main/ipc/exportHandlers.js'
-  ],
+  // The life of every PDF (A4 pages, errors, finishing), checked by pdfDocument.test.js
+  pdfkit: ['src/main/pdfDocument.js'],
   // ZIP files, checked by zipArchive.test.js
   archiver: ['src/main/zipArchive.js']
 };

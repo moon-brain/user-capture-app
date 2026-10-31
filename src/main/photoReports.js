@@ -9,7 +9,7 @@
  * reads the repository and decides where the file goes.
  */
 
-const fs = require('fs');
+const { createPdf } = require('./pdfDocument');
 const { compareUsersByName } = require('./utils/nameOrder');
 // The window's own rules, so the paper and the screen agree on what 100 %
 // means and which colour a group gets
@@ -149,18 +149,6 @@ function fitText(doc, text, width) {
 }
 
 /**
- * Wait for a PDF to reach the disk
- * @param {fs.WriteStream} stream
- * @returns {Promise<void>}
- */
-function finished(stream) {
-  return new Promise((resolve, reject) => {
-    stream.on('finish', resolve);
-    stream.on('error', reject);
-  });
-}
-
-/**
  * A table column. The header is only needed by table(), which draws it.
  * @typedef {{header?: string, width: number, align?: 'left'|'center'|'right'|'justify'}} ReportColumn
  */
@@ -177,16 +165,12 @@ class ReportWriter {
    * @param {(doc: PDFKit.PDFDocument) => Promise<void>} [options.drawLogo]
    */
   constructor({ filePath, projectName, generatedAt, drawLogo }) {
-    const PDFDocument = require('pdfkit');
-
-    this.doc = new PDFDocument({
-      size: 'A4',
+    // Pages kept until end(), which goes back to number them
+    this.pdf = createPdf(filePath, {
       margins: { top: PAGE_MARGIN, bottom: PAGE_MARGIN, left: PAGE_MARGIN, right: PAGE_MARGIN },
       bufferPages: true
     });
-    this.stream = fs.createWriteStream(filePath);
-    this.done = finished(this.stream);
-    this.doc.pipe(this.stream);
+    this.doc = this.pdf.doc;
 
     this.projectName = projectName || '';
     this.generatedAt = generatedAt || new Date();
@@ -204,7 +188,7 @@ class ReportWriter {
    */
   async startPage(newPage = true) {
     const { doc } = this;
-    if (newPage) doc.addPage();
+    if (newPage) this.pdf.addPage();
 
     await this.drawLogo(doc);
 
@@ -338,8 +322,7 @@ class ReportWriter {
     }
 
     doc.fillColor('black');
-    doc.end();
-    await this.done;
+    await this.pdf.finish();
   }
 }
 
