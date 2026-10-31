@@ -1,0 +1,3 @@
+#!/bin/sh
+# Conventional commits and no AI attribution (scripts/git/commitMessage.cjs)
+exec node scripts/git/commit-msg.cjs "$1"

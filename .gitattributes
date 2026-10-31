@@ -1,0 +1,17 @@
+# Line endings: LF in the repository and on disk, whatever core.autocrlf says.
+# Git for Windows installs with autocrlf=true, which turned files into CRLF on
+# checkout; tools that write LF (commit-and-tag-version and the CHANGELOG)
+# then left files with both, and every commit warned about it.
+* text=auto eol=lf
+
+# Binary: never converted, never diffed as text
+*.db binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary

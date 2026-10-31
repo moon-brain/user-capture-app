@@ -23,7 +23,8 @@ el porqué, el diseño del actualizador y cómo se llega desde el estado actual.
 |---|---|
 | Node 22.12 o superior (lo exige `electron@44`) | `node --version` |
 | Sesión de `gh` con permiso `repo` | `gh auth status` |
-| En `main`, sin cambios pendientes, sincronizado con `origin` | `git status -sb` debe decir `## main...origin/main` sin `ahead`/`behind` |
+| `main` al día y todo lo que va en la versión ya fusionado | `git switch main && git pull`; `git status -sb` debe decir `## main...origin/main` sin `ahead`/`behind` |
+| La CI de `main` en verde | `gh run list --branch main --limit 1` |
 | Tests en verde | `npm test` |
 | La aplicación arranca y abre el proyecto reciente | `npm run dev`, **y ciérrala después**: abierta con `--dev` bloquea los `.asar` de `dist/` y el empaquetado falla con `EBUSY` (ver 1.8) |
 | **La aplicación empaquetada arranca** | `npm run dist:unpacked` y abrir `dist\win-unpacked\Edu User Capture.exe`. Obligatorio: el `package.json` del asar no tiene `build`, `scripts` ni `devDependencies`, y la 1.7.0 se publicó sin arrancar por leer `build.publish` al iniciar. `npm run dev` no lo detecta |
@@ -48,9 +49,14 @@ Imprime la versión que calcula y el fragmento de changelog. Reglas:
 Si el resultado no es el deseado se fuerza con `--release-as minor`,
 `--release-as major` o `--release-as 2.0.0`.
 
-### 1.3 Crear la versión (local, reversible)
+### 1.3 Crear la versión (en una rama, con su pull request)
+
+`main` no admite commits directos (ver «Flujo de git» en `CLAUDE.md`), así
+que la versión también entra por pull request:
 
 ```
+git switch main && git pull
+git switch -c release/X.Y.Z  # la versión que dijo el --dry-run
 npm run release              # versión calculada de los commits
 npm run release:minor        # o forzar minor
 npm run release:major        # o forzar major
@@ -61,11 +67,21 @@ Esto, y nada más que esto:
 1. Escribe la versión nueva en `package.json` y `package-lock.json`.
 2. Añade la sección nueva a `CHANGELOG.md`.
 3. Hace el commit `chore(release): X.Y.Z`.
-4. Crea el tag `vX.Y.Z`.
 
-Todavía no ha salido nada del equipo. Revisa `CHANGELOG.md`; si algo está
-mal, se deshace con `git tag -d vX.Y.Z && git reset --hard HEAD~1` y se
-vuelve a empezar.
+**No crea el tag** (`.versionrc.json`, `skip.tag`). Revisa `CHANGELOG.md`; si
+algo está mal, se deshace con `git switch main && git branch -D release/X.Y.Z`
+y se vuelve a empezar. Si está bien:
+
+```
+git push -u origin HEAD
+gh pr create --fill
+gh pr merge --rebase --delete-branch     # cuando la CI esté en verde
+git switch main && git pull && git branch -D release/X.Y.Z
+```
+
+El tag no se crea en la rama porque «Rebase and merge» reescribe el commit: un
+tag hecho antes apuntaría a un commit que `main` no tiene. Lo crea el paso
+siguiente, sobre el commit que ya está en `main`.
 
 ### 1.4 Publicar (sube a GitHub, ya no es reversible sin dejar rastro)
 
@@ -74,10 +90,14 @@ $env:GH_TOKEN = gh auth token      # PowerShell; en bash: export GH_TOKEN=$(gh a
 npm run release:publish
 ```
 
-`release:publish` hace, en este orden:
+`release:publish` (`scripts/publish-release.mjs`) hace, en este orden:
 
-1. `git push --follow-tags origin main`: sube los commits **y el tag**. Sin
-   el tag no hay Release y el actualizador no ve nada.
+0. **Comprueba**, antes de tocar nada, que estás en `main`, sin cambios, igual
+   que `origin/main`, y que el último commit es `chore(release): X.Y.Z` con la
+   versión de `package.json`. Si algo no cuadra, para y lo dice.
+1. Crea el tag `vX.Y.Z` en ese commit y **sube solo el tag** (`git push
+   origin refs/tags/vX.Y.Z`; el hook `pre-push` no repite los tests para un
+   tag). Sin el tag no hay Release y el actualizador no ve nada.
 2. `node scripts/release-notes.mjs`: **crea la Release** `vX.Y.Z` en GitHub
    con la sección de `CHANGELOG.md` como notas (o actualiza las notas si ya
    existe). Se crea antes de empaquetar a propósito: electron-builder sube
@@ -134,20 +154,23 @@ nada.
 - **El instalador es defectuoso y ya está publicado**: no borres la release,
   publica un patch corregido (`fix:` + `npm run release` + `release:publish`).
   Las aplicaciones instaladas irán a la última.
-- **Hay que retirarla de verdad** (por ejemplo se publicó desde una rama
-  equivocada):
+- **Hay que retirarla de verdad** (por ejemplo, salió lo que no era). Los
+  tags `v*` están protegidos contra el borrado (regla «Release tags» en
+  GitHub), así que hay que desactivar la regla un momento, a propósito:
   ```
   gh release delete vX.Y.Z --yes
+  # GitHub > Settings > Rules > Rulesets > Release tags > Enforcement: Disabled
   git push origin :refs/tags/vX.Y.Z
   git tag -d vX.Y.Z
-  git revert HEAD            # revierte el commit chore(release)
-  git push origin main
+  # ... y volver a poner Enforcement: Active
   ```
-  Con esto `releases/latest` vuelve a apuntar a la versión anterior.
-- **El push funcionó pero electron-builder falló**: el tag ya está en
-  GitHub. Arregla la causa y lanza solo la parte de empaquetado:
-  `npx electron-builder --win nsis --x64 --publish always`. Vuelve a subir
-  los adjuntos a la misma release.
+  El commit `chore(release)` se revierte como cualquier cambio, en una rama
+  con su pull request (`git revert <commit>`). Con esto `releases/latest`
+  vuelve a apuntar a la versión anterior.
+- **El tag subió pero electron-builder falló**: arregla la causa y vuelve a
+  lanzar `npm run release:publish`. Si el tag ya existe en el mismo commit lo
+  reutiliza, actualiza las notas y vuelve a subir los adjuntos a la misma
+  release.
 - **Hay dos releases con el mismo tag** (`gh release view` muestra solo
   parte de los adjuntos, o `gh release edit` responde "tag_name already
   exists"). Es la carrera descrita en 1.4 y no debería repetirse con el paso

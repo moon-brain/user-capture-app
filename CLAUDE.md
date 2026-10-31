@@ -374,9 +374,9 @@ El instalador lo lleva como recurso (`build.win.extraResources`) en
 El flujo completo, con verificación y vuelta atrás, está en
 `docs/ACTUALIZACIONES_Y_RELEASE_PLAN.md` (sección 1). Resumen:
 - `npx commit-and-tag-version --dry-run` - Muestra la versión que saldría y el changelog, sin tocar nada
-- `npm run release` - Versión calculada de los commits (`feat` sube minor, `fix`/`perf` patch), CHANGELOG, commit y tag. Solo local
+- `npm run release` - **En una rama `release/X.Y.Z`**: versión calculada de los commits (`feat` sube minor, `fix`/`perf` patch), CHANGELOG y commit `chore(release): X.Y.Z`. **No crea el tag** (`.versionrc.json`, `skip.tag`): ese commit llega a `main` por su pull request, y «Rebase and merge» lo reescribe, así que un tag hecho en la rama apuntaría a un commit que `main` no tiene
 - `npm run release:minor` / `npm run release:major` - Igual, forzando el salto
-- `npm run release:publish` - Push con tags, instalador NSIS y Release de GitHub con `latest.yml`. Necesita `GH_TOKEN` (`gh auth token`)
+- `npm run release:publish` - **En `main`, ya fusionada la versión** (`scripts/publish-release.mjs`): comprueba que `main` está limpio, igual que `origin/main` y con `chore(release): X.Y.Z` como último commit; crea el tag `vX.Y.Z` en ese commit, sube solo el tag, crea la Release con las notas y sube el instalador NSIS con `latest.yml`. Si una comprobación falla, para sin tocar nada. Necesita `GH_TOKEN` (`gh auth token`)
 - `npm run release:notes` - Copia la sección del CHANGELOG a la Release de GitHub
 
 Las Releases de GitHub son el servidor de actualizaciones de la aplicación:
@@ -1751,11 +1751,50 @@ manual que le corresponde.
   apunta a una página o sección que no existe. Renombrar un título obliga a
   corregir los enlaces que lo usan.
 
+## Flujo de git
+
+`main` es siempre publicable: lo que entra en `main` puede acabar, con el
+siguiente `npm run release`, en todas las instalaciones. Por eso **no se hace
+commit ni push directamente a `main`**; GitHub lo impide (regla de rama).
+
+1. **Una rama corta por cambio**, desde `main` al día:
+   `git switch main && git pull && git switch -c fix/foto-al-actualizar-xml`.
+   Prefijo como el tipo del commit (`feat/`, `fix/`, `refactor/`, `docs/`,
+   `chore/`, `ci/`...), nombre en minúsculas con guiones. Corta: días, no
+   semanas; lo largo se parte en pasos que se puedan fusionar
+2. **Commits pequeños** con su mensaje (abajo). El hook `commit-msg` rechaza
+   los que no son conventional commits o llevan atribución a IA
+3. **`git push -u origin HEAD`**. El hook `pre-push` pasa `typecheck` y la
+   suite de Jest antes de subir; la rama queda además como copia de seguridad
+4. **Pull request** (`gh pr create --fill`). La CI (`tests.yml`) pasa tipos,
+   tests y la prueba en Electron real; sin CI en verde no se puede fusionar
+5. **Fusionar con «Rebase and merge»** (`gh pr merge --rebase --delete-branch`),
+   el único método permitido: cada commit llega a `main` tal cual, sin commit
+   de merge, y cada uno da su línea del CHANGELOG. Después,
+   `git switch main && git pull` y borrar la rama local (`git branch -d`)
+6. **Publicar** es aparte, con su propio pull request: ver «Versionado y
+   publicación»
+
+Más reglas:
+- Las ramas largas (`feat/orla-psd`, `feat/publicacion-itaca`) se ponen al día
+  con `git rebase main`, no fusionando `main` en ellas. `feat/publicacion-itaca`
+  **no se sube** a GitHub: el repositorio es público y lleva el flujo grabado
+  de ITACA y sus selectores
+- Nada de `git push --force` a ramas compartidas; en una rama propia, solo
+  `--force-with-lease`. `main` y los tags `v*` no admiten force push ni borrado
+- Los hooks están en `.githooks/` y los activa `npm install` (script
+  `prepare`, que pone `core.hooksPath`). `--no-verify` los salta: solo para
+  una emergencia, nunca como costumbre
+- `.gitattributes` fija LF en el repositorio y en disco, y marca los binarios;
+  no hace falta tocar `core.autocrlf`
+- Nada de datos reales del centro en el repositorio (es público): ni XML, ni
+  bases de datos, ni fotos. Las muestras de `tests/fixtures/` son inventadas
+
 ## Política de control de versiones
-- Cada vez que una funcionalidad se de por comprobada y finalizada, se hará un commit en git con la descripción de la funcionalidad en inglés.
+- Cada vez que una funcionalidad se de por comprobada y finalizada, se hará un commit en git con la descripción de la funcionalidad en inglés, en su rama (ver «Flujo de git»).
 - Toda funcionalidad nueva o que cambie lo que ve el usuario actualiza el manual (`src/help/`) en el mismo commit.
-- Los commits NO deben incluir referencias a Claude, herramientas de IA, o co-autoría con Claude.
-- Formato de commits:
+- Los commits NO deben incluir referencias a Claude, herramientas de IA, o co-autoría con Claude (lo comprueba el hook `commit-msg`).
+- Formato de commits (lo comprueba el hook `commit-msg`, `scripts/git/commitMessage.cjs`):
   - Usar conventional commits: `tipo: descripción breve`
   - Tipos: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `chore:`, etc.
   - Mensaje principal: descripción concisa en inglés
