@@ -333,4 +333,35 @@ describe('XMLUserParser', () => {
       expect(result.students[0].last_name2).toBe('PEÑA');
     });
   });
+
+  // The entity decoding was rewritten in fast-xml-parser 5.6-5.7; names are
+  // matched against photos and carnets, so a character read differently would
+  // be a different person
+  describe('escaped characters', () => {
+    const student = (attributes) => parseXml(
+      `<centro><alumnos><alumno ${attributes} NIA="1"/></alumnos></centro>`
+    ).then((result) => result.students[0]);
+
+    test('should decode the five XML entities', async () => {
+      const result = await student('nombre="Mª &quot;Pepa&quot;" apellido1="O&apos;Brien" apellido2="Pérez &amp; &lt;Ruiz&gt;"');
+
+      expect(result.first_name).toBe('Mª "Pepa"');
+      expect(result.last_name1).toBe("O'Brien");
+      expect(result.last_name2).toBe('Pérez & <Ruiz>');
+    });
+
+    test('should leave an HTML-only entity as it is written', async () => {
+      // &ntilde; is not an XML entity: the school's export never writes it,
+      // and guessing would hide a broken file
+      const result = await student('nombre="Mu&ntilde;oz"');
+
+      expect(result.first_name).toBe('Mu&ntilde;oz');
+    });
+
+    test('should keep a line break inside a value', async () => {
+      const result = await student('nombre="Ana\nMaría"');
+
+      expect(result.first_name).toBe('Ana\nMaría');
+    });
+  });
 });

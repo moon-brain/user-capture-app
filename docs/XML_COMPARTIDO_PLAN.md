@@ -167,8 +167,12 @@ Para que la garantía no dependa de la memoria de nadie:
 Con esto la aplicación analiza XML dejados en una carpeta compartida, en la
 que puede escribir más de un equipo.
 
-- fast-xml-parser ya está en la 4.5.7, que corrige los avisos críticos de
-  entidades en el DOCTYPE (commit `c592f0a`).
+- fast-xml-parser está en la 5.11.2 (PR #5): límites de expansión de
+  entidades, rechazo de nombres como `constructor` (contaminación del
+  prototipo) y ningún aviso de `npm audit`. Comparada con la 4.5.7 sobre 19
+  casos, solo cambia eso; **las dos siguen expandiendo un DOCTYPE «billion
+  laughs» pequeño y aceptan un `&` sin escapar**, así que el rechazo propio
+  del DOCTYPE de abajo sigue haciendo falta.
 - **Rechazar los XML con `<!DOCTYPE`** antes de analizarlos, con su test (un
   XML con expansión de entidades). ✅ Comprobado el 2026-10-31: el XML que
   exporta la gestión del centro no lleva DOCTYPE, así que rechazarlo no
