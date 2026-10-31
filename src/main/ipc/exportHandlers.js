@@ -17,6 +17,7 @@ const { compareUsersByName } = require('../utils/nameOrder');
 const { groupMissingPhotos, writeMissingPhotosPdf, writeGroupCoveragePdf } = require('../photoReports');
 // It loads sharp on first use, so requiring it here costs nothing at boot
 const imaging = require('../imageProcessing');
+const { planZipArchives, writeZip } = require('../zipArchive');
 
 // How many images to process at once. sharp releases the event loop while it
 // works, but libuv's thread pool is four threads by default, so going much
@@ -1299,39 +1300,6 @@ function registerExportHandlers(context) {
     }
   });
 
-  /**
-   * Helper function to create a ZIP archive from images
-   * @param {string} zipPath - Full path to the ZIP file to create
-   * @param {Array} images - Array of image objects with {path, name} properties
-   * @returns {Promise<void>}
-   */
-  async function createZipArchive(zipPath, images) {
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(zipPath);
-      const archiver = require('archiver');
-      const archive = archiver('zip', {
-        zlib: { level: 9 } // Maximum compression
-      });
-
-      output.on('close', () => {
-        resolve();
-      });
-
-      archive.on('error', (err) => {
-        reject(err);
-      });
-
-      archive.pipe(output);
-
-      // Add each image to the archive
-      for (const image of images) {
-        archive.file(image.path, { name: image.name });
-      }
-
-      archive.finalize();
-    });
-  }
-
   // Export inventory images from repository
   ipcMain.handle('export-inventory-images', async (event, folderPath, users, options) => {
     try {
@@ -1441,45 +1409,13 @@ function registerExportHandlers(context) {
       // Create ZIP files if enabled
       if (exportOptions.zipEnabled && processedImages.length > 0) {
         logger.info('Creating ZIP archives...');
-        const maxSizeBytes = exportOptions.zipMaxSizeMB * 1024 * 1024;
-        let currentZipSize = 0;
-        let zipIndex = 1;
-        let currentZipImages = [];
+        const plan = planZipArchives(processedImages, exportOptions.zipMaxSizeMB * 1024 * 1024);
         const zipFiles = [];
 
-        for (let i = 0; i < processedImages.length; i++) {
-          const image = processedImages[i];
-
-          // If adding this image would exceed the max size, create a ZIP and start a new one
-          if (currentZipSize + image.size > maxSizeBytes && currentZipImages.length > 0) {
-            const zipFileName = processedImages.length <= 1 || (currentZipSize + image.size <= maxSizeBytes && i === processedImages.length - 1)
-              ? 'imagenes.zip'
-              : `imagenes_${zipIndex}.zip`;
-            const zipPath = path.join(folderPath, zipFileName);
-
-            await createZipArchive(zipPath, currentZipImages);
-            zipFiles.push({ name: zipFileName, count: currentZipImages.length });
-
-            logger.info(`Created ZIP: ${zipFileName} (${currentZipImages.length} images, ${Math.round(currentZipSize/1024/1024)}MB)`);
-
-            currentZipImages = [];
-            currentZipSize = 0;
-            zipIndex++;
-          }
-
-          currentZipImages.push(image);
-          currentZipSize += image.size;
-        }
-
-        // Create final ZIP with remaining images
-        if (currentZipImages.length > 0) {
-          const zipFileName = zipFiles.length === 0 ? 'imagenes.zip' : `imagenes_${zipIndex}.zip`;
-          const zipPath = path.join(folderPath, zipFileName);
-
-          await createZipArchive(zipPath, currentZipImages);
-          zipFiles.push({ name: zipFileName, count: currentZipImages.length });
-
-          logger.info(`Created ZIP: ${zipFileName} (${currentZipImages.length} images, ${Math.round(currentZipSize/1024/1024)}MB)`);
+        for (const zip of plan) {
+          await writeZip(path.join(folderPath, zip.name), zip.entries);
+          zipFiles.push({ name: zip.name, count: zip.entries.length });
+          logger.info(`Created ZIP: ${zip.name} (${zip.entries.length} images, ${Math.round(zip.bytes / 1024 / 1024)}MB)`);
         }
 
         // Clean up temp folder

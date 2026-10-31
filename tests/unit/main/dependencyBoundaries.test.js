@@ -37,7 +37,8 @@ const ALLOWED = {
     'src/main/photoReports.js',
     'src/main/ipc/exportHandlers.js'
   ],
-  archiver: ['src/main/ipc/exportHandlers.js']
+  // ZIP files, checked by zipArchive.test.js
+  archiver: ['src/main/zipArchive.js']
 };
 
 // Electron is everywhere in the main process by nature, so it has a rule by

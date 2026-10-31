@@ -200,7 +200,8 @@ user-capture-app/
 │   │   ├── repositoryMirror.js  # Copia local de la carpeta del depósito
 │   │   ├── updateManager.js     # Envoltorio de electron-updater (comprobar, descargar, instalar)
 │   │   ├── workspaces.js        # Espacios de trabajo: combinaciones guardadas de las opciones de Ver
-│   │   └── xmlParser.js         # Parseo de archivos XML de usuarios
+│   │   ├── xmlParser.js         # Parseo de archivos XML de usuarios
+│   │   └── zipArchive.js        # Fachada de archiver: reparto en varios ZIP y escritura
 │   ├── help/          # Manual de uso en Markdown (pages.json + una página por área)
 │   ├── preload/       # Scripts preload (comunicación segura entre procesos)
 │   ├── renderer/      # Proceso de renderizado (interfaz de usuario)
@@ -1664,7 +1665,9 @@ ya apunta a él.
 ### 7. Inventario de imágenes del depósito
 - **Ubicación**: parte de los archivos para Edu Inventory Manager
 - **Formato**: `imagenes.zip`, **plano, sin carpetas por grupo**; si se pasa
-  del límite de tamaño, se parte en `imagenes_2.zip`, `imagenes_3.zip`...
+  del límite de tamaño, se parte en `imagenes_1.zip`, `imagenes_2.zip`... (lo
+  decide `planZipArchives()` en `zipArchive.js`, que también escribe los ZIP y
+  falla si no puede añadir una foto, en lugar de dejarla fuera)
 - **Contenido**: las fotos del depósito, nombradas por identificador
 - **Opciones**: límite de tamaño por ZIP
 ## Manual de uso
