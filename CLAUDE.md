@@ -44,7 +44,7 @@ que la usen otros centros.** Implica:
 
 Versiones instaladas según `package-lock.json`:
 - **Electron 44.10.0**, JavaScript CommonJS sin TypeScript ni bundler
-- **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.34.5** (imágenes)
+- **sqlite3 5.1.7** (base de datos del proyecto), **sharp 0.35.5** (imágenes)
 - **chokidar 3.6.0** (vigilancia de carpetas), **fast-xml-parser 4.5.7** (XML)
 - **pdfkit 0.17.2** (PDF), **archiver 7.0.1** (ZIP), **markdown-it 15.0.3** (manual)
 - **electron-updater 6.8.11** y **electron-builder 26.18.0** (instalador NSIS
