@@ -388,6 +388,48 @@ describe('XML update', () => {
     });
   });
 
+  describe('names and identifiers an older import stored with character references', () => {
+    // Before the parser decoded &#NNN; it stored it as written
+    beforeEach(async () => {
+      await db.importUsers({
+        groups: [],
+        students: [
+          { first_name: '&#209;URIA', last_name1: 'PE&#xD1;A', last_name2: '', nia: '1003', group_code: '1ESOA', document: '', birth_date: '' }
+        ],
+        teachers: [
+          { first_name: 'JUAN', last_name1: 'MARTIN', last_name2: '', document: '&#49;2345678Z', birth_date: '' }
+        ],
+        nonTeachingStaff: []
+      });
+      const users = await db.getUsers({});
+      await db.linkImageToUser(users.find(u => u.last_name1 === 'MARTIN').id, 'juan.jpg');
+    });
+
+    const roll = () => writeXml(
+      `${groupsXml}<alumnos>${studentXml(1001)}${studentXml(1002, '1ESOA', 'LUIS')}` +
+      '<alumno nombre="&#209;URIA" apellido1="PE&#xD1;A" NIA="1003" grupo="1ESOA"/></alumnos>' +
+      `<docentes>${teacherXml('D100')}<docente nombre="JUAN" apellido1="MARTIN" documento="&#49;2345678Z"/></docentes>`
+    );
+
+    test('should recognise the same people, keeping the photo', async () => {
+      const result = await analyse(roll());
+      expect(result.changes.toAdd).toBe(0);
+      expect(result.changes.toDelete).toBe(0);
+
+      await apply(result);
+      const juan = (await usersInDb()).find(u => u.document === '12345678Z');
+      expect(juan.image_path).toBe('juan.jpg');
+    });
+
+    test('should store the names decoded', async () => {
+      await apply(await analyse(roll()));
+
+      const nuria = (await db.getUsers({})).find(u => u.nia === '1003');
+      expect(nuria.first_name).toBe('ÑURIA');
+      expect(nuria.last_name1).toBe('PEÑA');
+    });
+  });
+
   describe('applying the update', () => {
     test('should add the students that were only in the XML', async () => {
       const xmlPath = writeXml(

@@ -350,12 +350,72 @@ describe('XMLUserParser', () => {
       expect(result.last_name2).toBe('Pérez & <Ruiz>');
     });
 
+    test('should decode decimal and hexadecimal character references', async () => {
+      // fast-xml-parser leaves them as written unless HTML entities are on
+      const result = await student('nombre="&#209;uria" apellido1="Pe&#xF1;a" apellido2="Ib&#225;&#xf1;ez"');
+
+      expect(result.first_name).toBe('Ñuria');
+      expect(result.last_name1).toBe('Peña');
+      expect(result.last_name2).toBe('Ibáñez');
+    });
+
+    test('should decode a reference to a markup character without breaking the file', async () => {
+      const result = await student('nombre="Pérez &#38; Hijos" apellido1="&#60;Ruiz&#62;" apellido2="O&#39;Brien &#34;Jr&#34;"');
+
+      expect(result.first_name).toBe('Pérez & Hijos');
+      expect(result.last_name1).toBe('<Ruiz>');
+      expect(result.last_name2).toBe('O\'Brien "Jr"');
+    });
+
+    test('should keep the text "&#209;" when it was written escaped', async () => {
+      const result = await student('nombre="&amp;#209;"');
+
+      expect(result.first_name).toBe('&#209;');
+    });
+
+    test('should decode references in the identifiers too', async () => {
+      const result = await parseXml(
+        '<centro><docentes><docente nombre="Ana" apellido1="Ruiz" documento="&#49;2345678&#90;"/></docentes></centro>'
+      );
+
+      expect(result.teachers[0].document).toBe('12345678Z');
+    });
+
     test('should leave an HTML-only entity as it is written', async () => {
       // &ntilde; is not an XML entity: the school's export never writes it,
       // and guessing would hide a broken file
       const result = await student('nombre="Mu&ntilde;oz"');
 
       expect(result.first_name).toBe('Mu&ntilde;oz');
+    });
+
+    describe('decodeCharacterReferences()', () => {
+      const { decodeCharacterReferences: decode } = XMLUserParser;
+
+      test('should turn references into characters, astral ones included', () => {
+        expect(decode('&#209;&#xd1;&#xD1;&#128512;')).toBe('ÑÑÑ😀');
+      });
+
+      test('should leave what is not a reference alone', () => {
+        expect(decode('&amp;#209; &#; &#x; &#12a; &X#41; &#X41;')).toBe('&amp;#209; &#; &#x; &#12a; &X#41; &#X41;');
+      });
+
+      test('should leave references to characters XML does not allow', () => {
+        expect(decode('&#0; &#1; &#xD800; &#xFFFE; &#1114112;')).toBe('&#0; &#1; &#xD800; &#xFFFE; &#1114112;');
+      });
+
+      test('should write the markup characters as named entities', () => {
+        expect(decode('&#38;&#60;&#62;&#34;&#39;&#x26;')).toBe('&amp;&lt;&gt;&quot;&apos;&amp;');
+      });
+
+      test('should not touch CDATA sections or comments', () => {
+        const xml = '<a>&#209;<![CDATA[&#209;]]><!-- &#209; -->&#209;</a>';
+        expect(decode(xml)).toBe('<a>Ñ<![CDATA[&#209;]]><!-- &#209; -->Ñ</a>');
+      });
+
+      test('should keep tabs and line breaks, which XML allows', () => {
+        expect(decode('a&#9;b&#10;c&#13;d')).toBe('a\tb\nc\rd');
+      });
     });
 
     test('should keep a line break inside a value', async () => {

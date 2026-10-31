@@ -648,7 +648,12 @@ sin `close()`, o que no aparezca en el array de `main.js`, hace fallar la suite.
   sincronización. **No hay integración con la API de Google Drive**: el
   depósito es una carpeta del disco, normalmente sincronizada por el cliente
   de escritorio de Drive, y la aplicación solo lee y escribe archivos
-- **xmlParser.js**: Parseo de XML de usuarios con fast-xml-parser
+- **xmlParser.js**: Parseo de XML de usuarios con fast-xml-parser. Los
+  atributos se leen como texto (un NIA «0123456» conserva el cero) y las
+  referencias numéricas (`&#209;`, `&#xF1;`) se decodifican antes de analizar
+  con `decodeCharacterReferences()`: fast-xml-parser solo lo hace junto con
+  las entidades HTML. `identifierKey()` de `projectHandlers.js` también las
+  decodifica, para que una actualización reconozca a quien se guardó con ellas
 - **logger.js**: Sistema de logging centralizado. El `app.log` del proyecto se
   corta al llegar a 5 MB y se conservan los dos anteriores (`app.1.log` y
   `app.2.log`): antes cada apertura añadía al mismo archivo y nunca se
