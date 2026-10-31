@@ -559,7 +559,9 @@ En orden, con un commit por paso. Los pasos 1 a 3 no tocan la aplicación.
   desarrollo (Node, token, tiempo de empaquetado) y dejaría el proceso en un
   archivo del repositorio. Es el paso natural después de que el flujo local
   funcione dos o tres veces; el flujo de este documento está pensado para
-  que ese cambio sea solo mover los mismos comandos a un workflow.
+  que ese cambio sea solo mover los mismos comandos a un workflow. Hoy la CI
+  (`tests.yml`) solo comprueba, con permiso de solo lectura; el `release.yml`
+  antiguo, que publicaba sin este flujo, se quitó el 2026-10-31.
 - **Instaladores de macOS y Linux.** No se publican ni se prueban.
 
 ## 8. Referencias

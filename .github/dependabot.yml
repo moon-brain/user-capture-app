@@ -1,0 +1,33 @@
+# Dependabot opens a pull request per update; the Tests workflow runs on each
+# one (unit tests, the compatibility fixtures and the smoke test in Electron),
+# and nothing is merged or published without a person deciding it.
+#
+# Commit prefixes follow the release flow: fix(deps) for what ships in the
+# installer (a patch release), chore(deps) for development tools (no release).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: fix(deps)
+      prefix-development: chore(deps)
+    groups:
+      # Minor and patch updates together, one pull request each; majors
+      # come one by one, as they need reading their release notes
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore(ci)

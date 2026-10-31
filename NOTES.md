@@ -30,9 +30,12 @@ orla en PSD espera.
 - **Orla en PSD** (`feat/orla-psd`, 1 commit con `docs/ORLA_PSD_PLAN.md`, 18
   por detrás de `main`): nada implementado; las rutas de menú del plan deben
   pasar a **Orla > …** al rebasar.
-- **Workflow de GitHub Actions** (`.github/workflows/release.yml`) desactivado
-  por «SDK compilation issues»; se publica desde local.
-- **Sin lint ni typecheck.** Recomendado: ESLint solo con errores reales
+- **CI**: `.github/workflows/tests.yml` comprueba tipos, tests y la prueba en
+  Electron en cada push a `main` y en cada pull request; Dependabot propone las
+  actualizaciones. Se sigue publicando desde local (el `release.yml` antiguo se
+  quitó el 2026-10-31). Pendiente de que alguien active en GitHub las alertas
+  de seguridad de Dependabot y mire la primera ejecución de la CI.
+- **Sin lint** (typecheck sí, desde el 2026-10-31). Recomendado: ESLint solo con errores reales
   (variables sin definir o sin usar), sin reglas de formato. Pendiente de
   decidir; va después de ITACA.
 - **Documentación desfasada**: `AGENTS.md` dice que no hay tests; `README.md`

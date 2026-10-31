@@ -1,0 +1,49 @@
+# Tests on every push to main and every pull request (Dependabot's included)
+#
+# Only checks: it builds no installer and publishes nothing. Publishing is
+# done from a local machine (docs/ACTUALIZACIONES_Y_RELEASE_PLAN.md), because
+# a release reaches every installation through the auto-updater.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # The application only runs on Windows, and the smoke test opens its window
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The major of the Node that Electron 44 carries (24.22): the unit tests
+      # run in this one, the application in Electron's
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      # The real application on a project written by 1.24.1: every library
+      # once, in Electron's runtime, and a clean quit
+      - name: Smoke test in Electron
+        run: npm run test:smoke

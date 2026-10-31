@@ -66,8 +66,8 @@ Versiones instaladas según `package-lock.json`:
   Chromium 152), no el del sistema
 - Para desarrollar hace falta **Node ≥ 22.12**: lo exigen `electron`
   (`>= 22.12.0`) y `commit-and-tag-version` (`>= 22`) en su campo `engines`.
-  En local hay 24.19.0. El README (Node 16) y el workflow de GitHub Actions
-  (Node 20, desactivado) están desfasados
+  En local hay 24.19.0, y la CI usa la 24 (la mayor del Node de Electron). El
+  README (Node 16) está desfasado
 
 ## Comandos
 
@@ -76,6 +76,12 @@ Versiones instaladas según `package-lock.json`:
 - **Probar**: `npm test`; `npm run test:coverage` para cobertura con umbrales
 - **Comprobar tipos**: `npm run typecheck`. Lint no existe todavía (ver
   `NOTES.md`)
+- **Probar en Electron real**: `npm run test:smoke` (`scripts/smoke-electron.mjs`)
+  abre la aplicación sobre una copia de la muestra de la 1.24.1, pasa por cada
+  biblioteca (base de datos, miniatura, carpeta de entrada, PDF, ZIP, XML y
+  manual) y la cierra como una persona. Abre la ventana: no forma parte de
+  `npm test`. Es lo que hay que ejecutar tras actualizar Electron o una
+  biblioteca, y la CI lo hace en cada push
 - **Empaquetar**: `npm run dist:win`
 - **Publicar**: `npm run release` y luego `npm run release:publish` (con
   `GH_TOKEN`); detalle en «Versionado y publicación»
@@ -146,8 +152,15 @@ Versiones instaladas según `package-lock.json`:
   tamaño; con la fecha en el nombre, cada cambio dejaba huérfanas
 - **Las solicitudes de otros proyectos o cursos no se borran**: el depósito es
   compartido y otro proyecto puede necesitarlas
-- **Las Releases de GitHub son el servidor de actualizaciones**; el workflow de
-  CI está desactivado («SDK compilation issues») y se publica desde local
+- **Las Releases de GitHub son el servidor de actualizaciones**, y se publica
+  desde local. La CI (`.github/workflows/tests.yml`) solo comprueba: tipos,
+  tests y la prueba en Electron real, con permiso de solo lectura. El antiguo
+  `release.yml`, que publicaba con `--publish always` y ya no funcionaba, se
+  quitó para que nada pueda publicar sin pasar por el flujo documentado
+- **Dependabot abre las actualizaciones** (`.github/dependabot.yml`): menores
+  y parches agrupados, mayores de una en una, con `fix(deps)` para lo que va
+  en el instalador y `chore(deps)` para herramientas. La CI corre sobre cada
+  una; aceptarlas y publicar sigue siendo cosa de una persona
 - **Los ZIP se escriben con yazl, no con archiver**: archiver 8 se publica
   solo como módulo ESM y Jest 29 no puede cargarlo, así que sus tests de
   contrato no habrían podido ejecutarse. yazl es CommonJS, con una sola

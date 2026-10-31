@@ -35,6 +35,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "typecheck": "tsc -p .",
+    "test:smoke": "node scripts/smoke-electron.mjs",
     "test:unit": "jest tests/unit",
     "test:performance": "jest tests/unit/table/virtualScroll.performance.test.js"
   },
