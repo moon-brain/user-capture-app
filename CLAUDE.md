@@ -101,6 +101,12 @@ Versiones instaladas según `package-lock.json`:
 - «Orla» es solo el servicio de pago; el PDF de fotos por grupo es
   `photoRoster`
 - Toda carpeta de exportación se elige con `selectExportFolder()`
+- Cada biblioteca externa entra solo por sus módulos (sqlite3 por
+  `database.js`, chokidar por `folderWatcher.js`...), que son lo que hay que
+  revisar al actualizarla. La tabla es `ALLOWED` en
+  `tests/unit/main/dependencyBoundaries.test.js`: falla si se usa desde otro
+  módulo, si un módulo de la lista deja de usarla o si se añade una
+  dependencia sin entrada. El renderer no importa `electron`
 - Toda funcionalidad visible actualiza `src/help/` en el mismo commit
 - Commits en conventional commits, en inglés, **sin atribución a Claude ni a
   herramientas de IA**, y preguntando antes si ejecutar los tests
