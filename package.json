@@ -57,7 +57,7 @@
     "@types/node": "24.19.2",
     "@types/pdfkit": "0.17.7",
     "@types/yazl": "3.3.1",
-    "acorn": "8.15.0",
+    "acorn": "8.19.0",
     "commit-and-tag-version": "^13.3.0",
     "cross-env": "^10.1.0",
     "electron": "^44.10.0",
