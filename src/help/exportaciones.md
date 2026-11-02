@@ -10,6 +10,7 @@ El cuadro para elegir la carpeta se abre en la última carpeta a la que exportas
 |---|---|
 | **Archivo CSV para Carnets del grupo seleccionado** (`Ctrl+E`) | El archivo `carnets.csv` para el programa de carnets |
 | **Archivos para Edu Inventory Manager** | `Alumnado.csv`, `Personal.csv` y `Grupos.csv`, y si quieres las fotos del depósito |
+| **Archivos para Inventario Legacy** | `Grupos.csv`, `Matrícula.csv` y `Personal.csv`, y si quieres las fotos del depósito en archivos ZIP |
 | **Imágenes capturadas como ID** | Las fotos capturadas, con el NIA o el DNI como nombre de archivo |
 | **Imágenes del depósito como ID** | Las fotos del depósito de imágenes, con el NIA o el DNI como nombre de archivo |
 | **Imágenes capturadas como nombre y apellidos** | Las fotos capturadas, con los apellidos y el nombre como nombre de archivo |
@@ -40,7 +41,7 @@ Solo aparecen las opciones que en ese momento significan algo distinto. Si no ti
 
 Si no hay ningún usuario que exportar, la aplicación te avisa y no exporta nada.
 
-Dos exportaciones no usan esta ventana porque tienen la suya: **Edu Inventory Manager** pregunta entre todos los usuarios y el grupo seleccionado, y el **Listado en PDF con fotografías por grupo** pregunta entre todos los grupos y uno solo.
+Tres exportaciones no usan esta ventana porque tienen la suya: **Edu Inventory Manager** e **Inventario Legacy** preguntan entre todos los usuarios y el grupo seleccionado, y el **Listado en PDF con fotografías por grupo** pregunta entre todos los grupos y uno solo.
 
 Las demás exportaciones (inventario, listado con fotografías y **Estadísticas de fotografías por grupo en PDF**) tienen su propio alcance, que se explica en cada apartado.
 
@@ -119,6 +120,30 @@ Sobre las fotos:
 - Salen del depósito de imágenes, no de las capturadas. Solo se incluyen los usuarios que tienen foto en el depósito.
 - Se llaman `NIA.jpg` o `DNI.jpg` y van todas juntas en la carpeta elegida, sin subcarpetas por grupo.
 - Con la compresión activada, las fotos van dentro de `imagenes.zip`. Si no caben en el tamaño máximo, se reparten en varios archivos: `imagenes_1.zip`, `imagenes_2.zip`, etc. En la carpeta no quedan fotos sueltas ni la carpeta temporal por la que pasan, aunque no haya ninguna foto que exportar o la exportación falle a medias.
+
+## Exportar los archivos para Inventario Legacy
+
+Genera los tres listados que importa Inventario Legacy, con las mismas columnas que los que saca el programa de gestión del centro, y si quieres las fotos del depósito en archivos ZIP.
+
+1. Si solo quieres un grupo, elígelo antes en el filtro de grupos.
+2. Pulsa **Archivo > Exportar > Archivos para Inventario Legacy**.
+3. En **Usuarios a exportar**, elige **Todos los usuarios** o **Grupo seleccionado**, como en [Edu Inventory Manager](#exportar-los-archivos-para-edu-inventory-manager).
+4. **Exportar imágenes del depósito** sale marcado. Elige **Copiar imagen original** o **Redimensionar imágenes** (ver [Copiar el original o redimensionar](#copiar-el-original-o-redimensionar)) y el **Tamaño máximo por archivo ZIP (MB)**. Aquí las fotos van siempre en ZIP, porque es como las importa Inventario Legacy; si solo quieres los listados, desmarca **Exportar imágenes del depósito**.
+5. Pulsa **Exportar** y elige la carpeta.
+6. Un mensaje final resume los archivos creados, cuántos alumnos de baja se han dejado fuera y las fotos exportadas.
+
+| Archivo | Contenido |
+|---|---|
+| `Grupos.csv` | Un grupo del centro por fila: `Código`, `Nombre`, `Capaci.` (plazas), `Tot.Act.` (alumnos matriculados en el grupo), `Tutor` (apellidos y nombre del tutor) y `Oficial` (`Si` o `No`) |
+| `Matrícula.csv` | Un alumno por fila: `NIA`, `Nombre`, `Apellido1`, `Apellido2`, `Fecha Nacimiento`, `Sexo` (`Hombre` o `Mujer`), `Documento`, `Estado` (`Matriculado`), `F. Matricula` y `Grupo` |
+| `Personal.csv` | Docentes y no docentes: `TIPO` (`Docente` o `No Docente`), `DOCUMENTO`, `NOMBRE`, `APELLIDO 1`, `APELLIDO 2`, `F. NACIMIENTO` y `GRUPO` (el grupo del que es tutor) |
+
+Las columnas que el XML del centro no trae salen vacías: `Prog. Ling.`, `Turno`, `Dictamen` y `Ense.` en los grupos; `Enseñanza`, `Ciclo FP/Prog. PFCB` y `Curso` en la matrícula; los teléfonos y `CARGO` en el personal. Los archivos van con la coma como separador y en la codificación de Windows (Windows-1252), como los del programa de gestión.
+
+- **El alumnado de baja no se exporta**, ni nadie del grupo **Eliminados**. Las fotos tampoco: solo van las de quienes salen en los listados.
+- **Los datos que el proyecto no guarda se leen del XML** con el que lo creaste o actualizaste por última vez: el sexo, el estado y la fecha de matrícula, y la capacidad, el tutor y si es oficial de cada grupo. La aplicación usa la copia que publicó en la carpeta `Centro` del depósito o, si no la encuentra, el archivo original, siempre que no haya cambiado desde entonces. Si no encuentra ninguno de los dos, no exporta nada y te pide que vuelvas a aplicar el XML con **Proyecto > Actualizar archivo XML**.
+- `Grupos.csv` lleva solo los grupos del centro, no los que crea la aplicación (**Docentes**, **No Docentes**, **Sin grupo**). Con **Grupo seleccionado** lleva solo ese grupo, pero su `Tot.Act.` cuenta igualmente todo el alumnado matriculado en él.
+- Las fotos se llaman `NIA.jpg` o `DNI.jpg` y se reparten en `imagenes.zip`, o en `imagenes_1.zip`, `imagenes_2.zip`, etc. si no caben en el tamaño máximo.
 
 ## Exportar imágenes capturadas como ID
 

@@ -287,24 +287,7 @@
       if (!this.checkProjectOpen()) return;
 
       // Get current group information
-      const filters = this.getCurrentFilters();
-      const selectedGroupCode = filters.group || null;
-
-      // Get group name if a group is selected
-      let selectedGroupName = null;
-      if (selectedGroupCode) {
-        try {
-          const groupsResult = await this.electronAPI.getGroups();
-          if (groupsResult.success) {
-            const group = groupsResult.groups.find(g => g.code === selectedGroupCode);
-            if (group) {
-              selectedGroupName = group.name;
-            }
-          }
-        } catch (error) {
-          console.error('Error getting group info:', error);
-        }
-      }
+      const { selectedGroupCode, selectedGroupName } = await this.getSelectedGroupInfo();
 
       // Show inventory export options modal
       const options = await this.inventoryExportOptionsModal.show({
@@ -368,49 +351,7 @@
 
           // Export images if enabled
           if (options.exportImages) {
-            message += '\n';
-
-            // Convert modal format to API format
-            const imageOptions = {
-              copyOriginal: options.imageOptions.copyOriginal,
-              resizeEnabled: options.imageOptions.resizeEnabled,
-              boxSize: options.imageOptions.boxSize,
-              maxSizeKB: options.imageOptions.maxSizeKB,
-              zipEnabled: options.zipEnabled || false,
-              zipMaxSizeMB: options.zipMaxSizeMB || 25
-            };
-
-            // Show progress
-            this.showProgressModal('Exportando Imágenes', 'Procesando archivos...');
-
-            // Perform image export
-            const imageExportResult = await this.electronAPI.exportInventoryImages(folderPath, usersToExport, imageOptions);
-
-            // Wait a moment to show 100% progress
-            await new Promise(resolve => setTimeout(resolve, 500));
-            this.closeProgressModal();
-
-            if (imageExportResult.success) {
-              const imageResults = imageExportResult.results;
-              message += `\nImágenes exportadas:\n`;
-              message += `  • Total procesadas: ${imageResults.total}\n`;
-              message += `  • Exportadas correctamente: ${imageResults.exported}\n`;
-              message += `  • Sin imagen en depósito: ${imageResults.skipped}\n`;
-
-              if (imageResults.errors > 0) {
-                message += `  • Errores: ${imageResults.errors}\n`;
-              }
-
-              // Add ZIP file information if applicable
-              if (imageOptions.zipEnabled && imageResults.zipFiles && imageResults.zipFiles.length > 0) {
-                message += `\nArchivos ZIP creados:\n`;
-                imageResults.zipFiles.forEach(zipFile => {
-                  message += `  • ${zipFile.name} (${zipFile.count} imágenes)\n`;
-                });
-              }
-            } else {
-              message += `\nError al exportar imágenes: ${imageExportResult.error}`;
-            }
+            message += '\n' + await this.exportInventoryPhotos(folderPath, usersToExport, options);
           }
 
           this.showInfoModal('Exportación exitosa', message);
@@ -418,6 +359,137 @@
           this.showInfoModal('Error', 'Error al exportar los CSV de inventario: ' + exportResult.error);
         }
       }
+    }
+
+    /**
+     * The repository photos of an inventory export, named by NIA or document
+     *
+     * Shared by the Edu Inventory Manager and Inventario Legacy exports.
+     *
+     * @param {string} folderPath
+     * @param {Array<Object>} users
+     * @param {Object} options - as InventoryExportOptionsModal returns them
+     * @returns {Promise<string>} the lines that go in the final summary
+     */
+    async exportInventoryPhotos(folderPath, users, options) {
+      // Convert modal format to API format
+      const imageOptions = {
+        copyOriginal: options.imageOptions.copyOriginal,
+        resizeEnabled: options.imageOptions.resizeEnabled,
+        boxSize: options.imageOptions.boxSize,
+        maxSizeKB: options.imageOptions.maxSizeKB,
+        zipEnabled: options.zipEnabled || false,
+        zipMaxSizeMB: options.zipMaxSizeMB || 25
+      };
+
+      // Show progress
+      this.showProgressModal('Exportando Imágenes', 'Procesando archivos...');
+
+      // Perform image export
+      const imageExportResult = await this.electronAPI.exportInventoryImages(folderPath, users, imageOptions);
+
+      // Wait a moment to show 100% progress
+      await new Promise(resolve => setTimeout(resolve, 500));
+      this.closeProgressModal();
+
+      if (!imageExportResult.success) {
+        return `\nError al exportar imágenes: ${imageExportResult.error}`;
+      }
+
+      const imageResults = imageExportResult.results;
+      let message = `\nImágenes exportadas:\n`;
+      message += `  • Total procesadas: ${imageResults.total}\n`;
+      message += `  • Exportadas correctamente: ${imageResults.exported}\n`;
+      message += `  • Sin imagen en depósito: ${imageResults.skipped}\n`;
+
+      if (imageResults.errors > 0) {
+        message += `  • Errores: ${imageResults.errors}\n`;
+      }
+
+      // Add ZIP file information if applicable
+      if (imageOptions.zipEnabled && imageResults.zipFiles && imageResults.zipFiles.length > 0) {
+        message += `\nArchivos ZIP creados:\n`;
+        imageResults.zipFiles.forEach(zipFile => {
+          message += `  • ${zipFile.name} (${zipFile.count} imágenes)\n`;
+        });
+      }
+      return message;
+    }
+
+    /**
+     * The selected group's code and name, for the inventory dialogs
+     * @returns {Promise<{selectedGroupCode: string|null, selectedGroupName: string|null}>}
+     */
+    async getSelectedGroupInfo() {
+      const selectedGroupCode = this.getCurrentFilters().group || null;
+      let selectedGroupName = null;
+      if (selectedGroupCode) {
+        try {
+          const groupsResult = await this.electronAPI.getGroups();
+          if (groupsResult.success) {
+            const group = groupsResult.groups.find(g => g.code === selectedGroupCode);
+            if (group) {
+              selectedGroupName = group.name;
+            }
+          }
+        } catch (error) {
+          console.error('Error getting group info:', error);
+        }
+      }
+      return { selectedGroupCode, selectedGroupName };
+    }
+
+    /**
+     * Files for Inventario Legacy: Grupos.csv, Matrícula.csv, Personal.csv
+     * and, if asked for, the repository photos in ZIP files
+     *
+     * The main process reads the users itself, with data from the project's
+     * XML, and answers with the ones exported: students who have left are
+     * not, and their photos must not go either.
+     */
+    async exportLegacyInventory() {
+      if (!this.checkProjectOpen()) return;
+
+      const { selectedGroupCode, selectedGroupName } = await this.getSelectedGroupInfo();
+      const options = await this.inventoryExportOptionsModal.show({
+        selectedGroupCode,
+        selectedGroupName,
+        title: 'Archivos para Inventario Legacy',
+        requireZip: true
+      });
+      if (!options) return;
+
+      const dialogResult = await this.showOpenDialog({
+        properties: ['openDirectory'],
+        title: 'Seleccionar carpeta para guardar los archivos de Inventario Legacy'
+      });
+      if (dialogResult.canceled || dialogResult.filePaths.length === 0) return;
+      const folderPath = dialogResult.filePaths[0];
+
+      const exportResult = await this.electronAPI.exportLegacyInventoryCSV(folderPath, {
+        groupCode: options.scope === 'group' ? selectedGroupCode : null
+      });
+      if (!exportResult.success) {
+        this.showInfoModal('Error', 'Error al exportar los archivos de Inventario Legacy: ' + exportResult.error);
+        return;
+      }
+
+      const { files, leftOut } = exportResult.results;
+      let message = 'Archivos de Inventario Legacy exportados correctamente\n\n';
+      files.forEach(file => {
+        message += `  • ${file.fileName} (${file.rows} registros)\n`;
+      });
+      if (leftOut > 0) {
+        message += leftOut === 1
+          ? '\n1 alumno de baja no se ha exportado.\n'
+          : `\n${leftOut} alumnos de baja no se han exportado.\n`;
+      }
+
+      if (options.exportImages && exportResult.users.length > 0) {
+        message += '\n' + await this.exportInventoryPhotos(folderPath, exportResult.users, options);
+      }
+
+      this.showInfoModal('Exportación exitosa', message);
     }
 
     /**

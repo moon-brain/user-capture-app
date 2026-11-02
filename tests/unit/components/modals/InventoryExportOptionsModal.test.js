@@ -33,6 +33,7 @@ describe('InventoryExportOptionsModal', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <div id="inventory-export-options-modal" class="modal">
+        <h2 id="inventory-export-title">Opciones de Exportación de Inventario</h2>
         <input type="radio" name="scope" id="inventory-export-all-users" checked>
         <input type="radio" name="scope" id="inventory-export-selected-group">
         <span id="inventory-selected-group-label"></span>
@@ -132,6 +133,64 @@ describe('InventoryExportOptionsModal', () => {
       resizeEnabled: false,
       boxSize: 800,
       maxSizeKB: 500
+    });
+  });
+
+  // Inventario Legacy imports the photos only from a ZIP
+  describe('with requireZip, as Inventario Legacy opens it', () => {
+    test('should take its own title and give back the usual one afterwards', async () => {
+      create();
+      const title = () => document.getElementById('inventory-export-title').textContent;
+
+      modal.show({ title: 'Archivos para Inventario Legacy', requireZip: true });
+      await settle();
+      expect(title()).toBe('Archivos para Inventario Legacy');
+      modal.handleCancel();
+
+      modal.show();
+      await settle();
+      expect(title()).toBe('Opciones de Exportación de Inventario');
+      modal.handleCancel();
+    });
+
+    test('should put the photos in ZIP files, without a way to untick it', async () => {
+      create();
+
+      const promise = modal.show({ requireZip: true });
+      await settle();
+
+      expect(modal.zipEnabledCheckbox.checked).toBe(true);
+      expect(modal.zipEnabledCheckbox.disabled).toBe(true);
+      expect(modal.zipMaxSizeInput.disabled).toBe(false);
+      modal.zipMaxSizeInput.value = '40';
+      modal.handleConfirm();
+
+      expect(await promise).toEqual(expect.objectContaining({ exportImages: true, zipEnabled: true, zipMaxSizeMB: 40 }));
+    });
+
+    test('should still let the photos be left out', async () => {
+      create();
+
+      const promise = modal.show({ requireZip: true });
+      await settle();
+      modal.exportImagesCheckbox.checked = false;
+      modal.handleExportImagesChange();
+      modal.handleConfirm();
+
+      expect((await promise).exportImages).toBe(false);
+    });
+
+    test('should leave the ZIP box free again for Edu Inventory Manager', async () => {
+      create();
+
+      modal.show({ requireZip: true });
+      await settle();
+      modal.handleCancel();
+      modal.show();
+      await settle();
+
+      expect(modal.zipEnabledCheckbox.disabled).toBe(false);
+      modal.handleCancel();
     });
   });
 });

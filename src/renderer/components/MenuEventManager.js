@@ -47,6 +47,7 @@
       this.onImportImagesId = config.onImportImagesId || (() => {});
       this.onExportCSV = config.onExportCSV || (() => {});
       this.onExportInventoryCSV = config.onExportInventoryCSV || (() => {});
+      this.onExportLegacyInventory = config.onExportLegacyInventory || (() => {});
       this.onExportImages = config.onExportImages || (() => {});
       this.onExportRepositoryImages = config.onExportRepositoryImages || (() => {});
       this.onExportImagesName = config.onExportImagesName || (() => {});
@@ -335,6 +336,10 @@
 
       this.electronAPI.onMenuExportInventoryCSV(() => {
         this.onExportInventoryCSV();
+      });
+
+      this.electronAPI.onMenuExportLegacyInventory(() => {
+        this.onExportLegacyInventory();
       });
 
       this.electronAPI.onMenuExportImages(() => {

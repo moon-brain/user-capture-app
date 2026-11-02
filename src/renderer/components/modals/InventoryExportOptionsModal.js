@@ -24,6 +24,11 @@
       });
 
       this.getDefaults = getDefaults || null;
+      // Inventario Legacy imports the photos only from a ZIP
+      this.requireZip = false;
+
+      this.title = document.getElementById('inventory-export-title');
+      this.defaultTitle = this.title ? this.title.textContent : '';
 
       // Get DOM elements - User scope
       this.allUsersRadio = document.getElementById('inventory-export-all-users');
@@ -74,6 +79,9 @@
      * @param {Object} config - Configuration object
      * @param {string} config.selectedGroupCode - Currently selected group code
      * @param {string} config.selectedGroupName - Currently selected group name
+     * @param {string} [config.title] - Instead of the Edu Inventory Manager one
+     * @param {boolean} [config.requireZip] - Photos, if exported, always go in
+     *   ZIP files: the box is ticked and cannot be unticked
      * @returns {Promise<Object|null>} Selected options or null if cancelled
      */
     async show(config = {}) {
@@ -91,7 +99,17 @@
       // Default to "all users"
       this.allUsersRadio.checked = true;
 
+      if (this.title) {
+        this.title.textContent = config.title || this.defaultTitle;
+      }
+      this.requireZip = Boolean(config.requireZip);
+      if (this.requireZip) {
+        this.exportImagesCheckbox.checked = true;
+        this.zipEnabledCheckbox.checked = true;
+      }
+
       await this.applyImageDefaults();
+      this.handleExportImagesChange();
 
       // Show modal using base class method
       await super.open();
@@ -184,8 +202,8 @@
       }
       this.zipMaxSizeInput.disabled = !shouldEnableZip;
 
-      // Disable ZIP checkbox if images not exported
-      this.zipEnabledCheckbox.disabled = !isExportEnabled;
+      // Disable ZIP checkbox if images not exported, or if it cannot be unticked
+      this.zipEnabledCheckbox.disabled = !isExportEnabled || this.requireZip;
     }
 
     /**

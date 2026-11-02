@@ -948,6 +948,7 @@ function initializeMenuEventManager() {
     onImportImagesId: handleImportImagesId,
     onExportCSV: handleExportCSV,
     onExportInventoryCSV: handleExportInventoryCSV,
+    onExportLegacyInventory: handleExportLegacyInventory,
     onExportImages: handleExportImages,
     onExportRepositoryImages: handleExportRepositoryImages,
     onExportImagesName: handleExportImagesName,
@@ -2569,6 +2570,12 @@ async function handleExportCSV() {
 async function handleExportInventoryCSV() {
   if (exportManager) {
     await exportManager.exportInventoryCSV();
+  }
+}
+
+async function handleExportLegacyInventory() {
+  if (exportManager) {
+    await exportManager.exportLegacyInventory();
   }
 }
 

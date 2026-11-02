@@ -141,6 +141,12 @@ class MenuBuilder {
                 this.mainWindow.webContents.send('menu-export-inventory-csv');
               }
             },
+            {
+              label: 'Archivos para Inventario Legacy',
+              click: () => {
+                this.mainWindow.webContents.send('menu-export-legacy-inventory');
+              }
+            },
             { type: 'separator' },
             {
               label: 'Imágenes capturadas como ID',

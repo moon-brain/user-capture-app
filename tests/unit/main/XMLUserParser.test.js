@@ -461,4 +461,57 @@ describe('XMLUserParser', () => {
       expect(read).not.toHaveBeenCalled();
     });
   });
+
+  // Fields the project does not keep, for the Inventario Legacy export
+  describe('parseDetails()', () => {
+    const details = async (xml) => {
+      testId++;
+      const filePath = path.join(fixturesPath, `detalles-${testId}.xml`);
+      fs.writeFileSync(filePath, xml, 'utf8');
+      return new XMLUserParser(filePath).parseDetails();
+    };
+
+    const FULL = '<?xml version="1.0" encoding="UTF-8"?><centro curso="2026">' +
+      '<grupos><grupo codigo="1ESOA" nombre="ESO1EA" capacidad="30" tutor_ppal="12345678Z" oficial="S" turno="D"/></grupos>' +
+      '<alumnos>' +
+      '<alumno NIA="0012345" nombre="Begoña" apellido1="Núñez" sexo="M" estado_matricula="M" fecha_matricula="01/07/2026" grupo="1ESOA"/>' +
+      '<alumno NIA="10000002" nombre="Luis" apellido1="Ruiz" sexo="H" estado_matricula="B" fecha_matricula="02/07/2026"/>' +
+      '</alumnos>' +
+      '<docentes><docente documento="12345678Z" nombre="María José" apellido1="Ruiz" apellido2="Llorens"/></docentes>' +
+      '<no_docentes><no_docente documento="X1234567L" nombre="Pedro" apellido1="Gómez"/></no_docentes>' +
+      '</centro>';
+
+    test('should read each group by its code', async () => {
+      const { groups } = await details(FULL);
+
+      expect(groups.get('1ESOA')).toEqual({ capacity: '30', tutorDocument: '12345678Z', official: 'S' });
+    });
+
+    test('should read each student by NIA, keeping its leading zeros', async () => {
+      const { students } = await details(FULL);
+
+      expect(students.get('0012345')).toEqual({ sex: 'M', status: 'M', enrollmentDate: '01/07/2026' });
+      expect(students.get('10000002').status).toBe('B');
+    });
+
+    test('should read teachers and non-teaching staff by document, to name tutors', async () => {
+      const { staff } = await details(FULL);
+
+      expect(staff.get('12345678Z')).toEqual({ first_name: 'María José', last_name1: 'Ruiz', last_name2: 'Llorens' });
+      expect(staff.get('X1234567L')).toEqual({ first_name: 'Pedro', last_name1: 'Gómez', last_name2: '' });
+    });
+
+    test('should give missing attributes as empty text', async () => {
+      const { groups, students } = await details('<?xml version="1.0"?><centro>' +
+        '<grupos><grupo codigo="1A" nombre="1A"/></grupos><alumnos><alumno NIA="1001" nombre="Ana"/></alumnos></centro>');
+
+      expect(groups.get('1A')).toEqual({ capacity: '', tutorDocument: '', official: '' });
+      expect(students.get('1001')).toEqual({ sex: '', status: '', enrollmentDate: '' });
+    });
+
+    test('should go through the same checks as parse()', async () => {
+      await expect(details('<?xml version="1.0"?><!DOCTYPE centro><centro/>')).rejects.toThrow(/DOCTYPE/);
+      await expect(details('<?xml version="1.0"?><centro><alumnos>')).rejects.toThrow(/no es válido/);
+    });
+  });
 });

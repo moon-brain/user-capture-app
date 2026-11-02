@@ -610,6 +610,123 @@ describe('ExportManager', () => {
     });
   });
 
+  describe('exportLegacyInventory()', () => {
+    let legacyManager;
+    let inventoryModal;
+    const LUIS = { id: 2, type: 'student', nia: '10000002', group_code: '2BACA' };
+    const OPTIONS = {
+      scope: 'group',
+      exportImages: true,
+      imageOptions: { copyOriginal: false, resizeEnabled: true, boxSize: 600, maxSizeKB: 200 },
+      zipEnabled: true,
+      zipMaxSizeMB: 40
+    };
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      inventoryModal = { show: jest.fn().mockResolvedValue(OPTIONS) };
+      mockShowOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['C:\\Exportar'] });
+      mockElectronAPI.getGroups = jest.fn().mockResolvedValue({ success: true, groups: [{ code: '2BACA', name: 'BTX2BA' }] });
+      mockElectronAPI.exportLegacyInventoryCSV = jest.fn().mockResolvedValue({
+        success: true,
+        results: {
+          files: [{ fileName: 'Grupos.csv', rows: 1 }, { fileName: 'Matrícula.csv', rows: 1 }, { fileName: 'Personal.csv', rows: 0 }],
+          leftOut: 3
+        },
+        users: [LUIS]
+      });
+      mockElectronAPI.exportInventoryImages = jest.fn().mockResolvedValue({
+        success: true,
+        results: { total: 1, exported: 1, skipped: 0, errors: [], zipFiles: [{ name: 'imagenes.zip', count: 1 }] }
+      });
+
+      legacyManager = new ExportManager({
+        exportOptionsModal: mockExportOptionsModal,
+        inventoryExportOptionsModal: inventoryModal,
+        confirmModal: mockConfirmModal,
+        showProgressModal: mockShowProgressModal,
+        closeProgressModal: mockCloseProgressModal,
+        showInfoModal: mockShowInfoModal,
+        showOpenDialog: mockShowOpenDialog,
+        ...mockGetters,
+        getCurrentFilters: jest.fn(() => ({ group: '2BACA' })),
+        electronAPI: mockElectronAPI
+      });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const run = async () => {
+      const done = legacyManager.exportLegacyInventory();
+      await jest.runAllTimersAsync();
+      await done;
+    };
+
+    test('should open the inventory dialog with its title and the ZIP required', async () => {
+      await run();
+
+      expect(inventoryModal.show).toHaveBeenCalledWith({
+        selectedGroupCode: '2BACA',
+        selectedGroupName: 'BTX2BA',
+        title: 'Archivos para Inventario Legacy',
+        requireZip: true
+      });
+    });
+
+    test('should ask for the chosen group only', async () => {
+      await run();
+
+      expect(mockElectronAPI.exportLegacyInventoryCSV).toHaveBeenCalledWith('C:\\Exportar', { groupCode: '2BACA' });
+    });
+
+    test('should send the photos of the users exported, with the options chosen', async () => {
+      await run();
+
+      expect(mockElectronAPI.exportInventoryImages).toHaveBeenCalledWith('C:\\Exportar', [LUIS], {
+        copyOriginal: false, resizeEnabled: true, boxSize: 600, maxSizeKB: 200, zipEnabled: true, zipMaxSizeMB: 40
+      });
+    });
+
+    test('should say which files it wrote and how many students on leave it left out', async () => {
+      await run();
+
+      const [title, message] = mockShowInfoModal.mock.calls[0];
+      expect(title).toBe('Exportación exitosa');
+      expect(message).toContain('Matrícula.csv (1 registros)');
+      expect(message).toContain('3 alumnos de baja no se han exportado');
+      expect(message).toContain('imagenes.zip (1 imágenes)');
+    });
+
+    test('should export no photos when they were not asked for', async () => {
+      inventoryModal.show.mockResolvedValue({ scope: 'all', exportImages: false });
+
+      await run();
+
+      expect(mockElectronAPI.exportLegacyInventoryCSV).toHaveBeenCalledWith('C:\\Exportar', { groupCode: null });
+      expect(mockElectronAPI.exportInventoryImages).not.toHaveBeenCalled();
+    });
+
+    test('should show the reason and export no photos when the files fail', async () => {
+      mockElectronAPI.exportLegacyInventoryCSV.mockResolvedValue({ success: false, error: 'No se encuentra el XML' });
+
+      await run();
+
+      expect(mockShowInfoModal).toHaveBeenCalledWith('Error', expect.stringContaining('No se encuentra el XML'));
+      expect(mockElectronAPI.exportInventoryImages).not.toHaveBeenCalled();
+    });
+
+    test('should do nothing when the dialog or the folder is cancelled', async () => {
+      inventoryModal.show.mockResolvedValueOnce(null);
+      await run();
+      mockShowOpenDialog.mockResolvedValueOnce({ canceled: true, filePaths: [] });
+      await run();
+
+      expect(mockElectronAPI.exportLegacyInventoryCSV).not.toHaveBeenCalled();
+    });
+  });
+
   describe('exportRepositoryImagesByID()', () => {
     const USERS = [
       { id: 1, nia: '1001', type: 'student', image_path: null },

@@ -27,6 +27,7 @@ describe('MenuEventManager', () => {
       onMenuImportImagesId: jest.fn(),
       onMenuExportCSV: jest.fn(),
       onMenuExportInventoryCSV: jest.fn(),
+      onMenuExportLegacyInventory: jest.fn(),
       onMenuExportImages: jest.fn(),
       onMenuExportRepositoryImages: jest.fn(),
       onMenuExportImagesName: jest.fn(),

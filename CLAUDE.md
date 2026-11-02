@@ -227,6 +227,7 @@ user-capture-app/
 │   │   ├── imageCrop.js         # Recortar una foto capturada guardando su original, y restaurarlo
 │   │   ├── imageOrientation.js  # Leer y cambiar la orientación EXIF de un JPEG sin recomprimir
 │   │   ├── ingestFolder.js      # Carpeta de entrada (ingest) del proyecto y su vigilante
+│   │   ├── legacyInventory.js   # Los tres CSV de Inventario Legacy (Windows-1252, CRLF)
 │   │   ├── logger.js            # Sistema de logging
 │   │   ├── pdfDocument.js       # Fachada de pdfkit: crear un PDF A4, añadir páginas y esperar a que se escriba
 │   │   ├── pendingRequests.js   # Solicitudes de carnet y publicación: listar, revisar y archivar
@@ -393,6 +394,8 @@ El proceso principal ha sido refactorizado en módulos organizados por responsab
   - `export-csv`: CSV para carnets. **Solo los usuarios con foto en el
     depósito**; el resto se cuentan como ignorados
   - `export-inventory-csv`: 3 CSVs separados (Alumnado.csv, Personal.csv, Grupos.csv)
+  - `export-legacy-inventory-csv`: los 3 CSV de Inventario Legacy (ver
+    «Archivos para Inventario Legacy»)
   - `export-images`: Imágenes con nombre por ID (NIA/DNI), en una subcarpeta
     por código de grupo
   - `export-repository-images`: Igual, pero con las fotos del depósito;
@@ -1644,6 +1647,30 @@ ya apunta a él.
   - **Personal.csv**: añade `Función`, `Teléfono 1`, `Teléfono 2` y `Email`
   - **Grupos.csv**: `CódigoGrupo` y nombre, con **todos** los grupos del
     proyecto, tengan usuarios o no
+
+### 2b. Archivos para Inventario Legacy
+- **Comando de menú**: Archivo > Exportar > Archivos para Inventario Legacy
+- **Archivos**: `Grupos.csv`, `Matrícula.csv` y `Personal.csv`, con las
+  cabeceras **literales** del listado del programa de gestión (las importa
+  otro programa), en **Windows-1252 y CRLF** (`encodeWindows1252()`), comillas
+  solo donde hay coma. Las construye `buildLegacyInventory()` en
+  `legacyInventory.js`, funciones puras; el handler lee y escribe
+- **Datos que el proyecto no guarda** (sexo, estado y fecha de matrícula;
+  capacidad, tutor y oficial del grupo): se leen del XML con
+  `XMLUserParser.parseDetails()`, no se añadieron columnas. El archivo lo
+  busca `locateAppliedXml()` (`sharedXml.js`): la copia de `Centro`, o el
+  `xmlFilePath` si su hash es el aplicado; en proyectos anteriores a la 1.25,
+  el `xmlFilePath` tal cual. Sin ninguno, no exporta y pide **Proyecto >
+  Actualizar archivo XML**
+- Sin el alumnado de baja (`estado_matricula="B"`) ni el grupo `ELIMINADOS`;
+  el handler devuelve `users`, los exportados, y las fotos van con ellos por
+  `export-inventory-images`
+- Columnas sin origen en el XML, **vacías por decisión del centro**:
+  `Prog. Ling.`, `Turno`, `Dictamen`, `Ense.`, `Enseñanza`, `Ciclo FP/Prog.
+  PFCB`, `Curso`, teléfonos y `CARGO`. `Tutor` es el docente de `tutor_ppal`
+  («Apellidos, Nombre») y el `GRUPO` del personal, el que tutoriza
+- Usa `InventoryExportOptionsModal` con `{ title, requireZip: true }`: las
+  fotos, si se exportan, van siempre en ZIP
 
 ### 3. Imágenes capturadas como ID
 - **Comando de menú**: Archivo > Exportar > Imágenes capturadas como ID

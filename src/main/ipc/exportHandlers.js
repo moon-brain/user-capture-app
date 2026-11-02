@@ -19,6 +19,9 @@ const { groupMissingPhotos, writeMissingPhotosPdf, writeGroupCoveragePdf } = req
 const imaging = require('../imageProcessing');
 const { planZipArchives, writeZip } = require('../zipArchive');
 const { createPdf } = require('../pdfDocument');
+const XMLUserParser = require('../xmlParser');
+const { locateAppliedXml } = require('../sharedXml');
+const { buildLegacyInventory } = require('../legacyInventory');
 
 // How many images to process at once. sharp releases the event loop while it
 // works, but libuv's thread pool is four threads by default, so going much
@@ -28,6 +31,10 @@ const IMAGE_EXPORT_CONCURRENCY = 4;
 // The exports used to replace an empty list with every user in the project,
 // so a search with no results sent everyone instead of nobody
 const NO_USERS_TO_EXPORT = 'No hay usuarios que exportar con la selección y los filtros actuales';
+
+// Inventario Legacy needs fields the project does not keep, read from its XML
+const LEGACY_NO_XML = 'No se encuentra el XML con el que se creó o actualizó el proyecto, y de él salen datos ' +
+  'que estos archivos necesitan (sexo, matrícula, tutores...). Vuelve a aplicarlo con Proyecto > Actualizar archivo XML.';
 
 // Exported images are written to a temporary file and renamed into place. The
 // extension matters: the repository mirror only indexes .jpg and .jpeg, so no
@@ -1619,6 +1626,58 @@ function registerExportHandlers(context) {
       };
     } catch (error) {
       console.error('Error exporting inventory CSV:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Inventario Legacy: Grupos.csv, Matrícula.csv and Personal.csv (see
+  // legacyInventory.js). The photos go through export-inventory-images with
+  // the users this returns, which leaves out students who have left.
+  ipcMain.handle('export-legacy-inventory-csv', async (event, folderPath, { groupCode = null } = {}) => {
+    try {
+      if (!state.dbManager) {
+        throw new Error('No hay ningún proyecto abierto');
+      }
+
+      const allUsers = await state.dbManager.getUsers({});
+      const users = groupCode ? allUsers.filter((user) => user.group_code === groupCode) : allUsers;
+      if (users.length === 0) {
+        return { success: false, error: NO_USERS_TO_EXPORT };
+      }
+
+      const located = await locateAppliedXml({
+        dbManager: state.dbManager,
+        repositoryPath: await getImageRepositoryPath(state.dbManager)
+      });
+      if (!located) {
+        return { success: false, error: LEGACY_NO_XML };
+      }
+      const details = await new XMLUserParser(located.filePath).parseDetails();
+
+      const allGroups = await state.dbManager.getGroups();
+      const groups = groupCode ? allGroups.filter((group) => group.code === groupCode) : allGroups;
+
+      logger.section('LEGACY INVENTORY EXPORT');
+      logger.info(`XML read: ${located.filePath}${located.exact ? '' : ' (not checked against the applied one)'}`);
+
+      const built = buildLegacyInventory({ users, allUsers, groups, details });
+      // Fixed names, as the other program expects them: overwritten
+      for (const file of built.files) {
+        await fs.promises.writeFile(path.join(folderPath, file.fileName), file.content);
+        logger.success(`Created ${file.fileName} (${file.rows} rows)`);
+      }
+      logger.info(`Students left out as no longer enrolled: ${built.leftOut}`);
+
+      return {
+        success: true,
+        results: {
+          files: built.files.map(({ fileName, rows }) => ({ fileName, rows })),
+          leftOut: built.leftOut
+        },
+        users: built.exportedUsers
+      };
+    } catch (error) {
+      logger.error('Error exporting the Inventario Legacy files', error);
       return { success: false, error: error.message };
     }
   });
