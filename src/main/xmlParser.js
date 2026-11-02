@@ -84,31 +84,49 @@ class XMLUserParser {
     });
   }
 
+  /**
+   * Read, check and parse the file, down to its <centro> element
+   *
+   * Shared by parse() and parseDetails(), so every reading of a school XML
+   * goes through the same size, DOCTYPE and validity checks.
+   *
+   * @returns {Object|null} the <centro> element as fast-xml-parser gives it
+   */
+  readCentro() {
+    const { size } = fs.statSync(this.xmlPath);
+    if (size > MAX_XML_BYTES) {
+      throw new Error(`El archivo ocupa ${Math.round(size / 1024 / 1024)} MB, más de lo que puede ocupar un XML del centro (${MAX_XML_BYTES / 1024 / 1024} MB)`);
+    }
+
+    const xmlData = fs.readFileSync(this.xmlPath, 'utf8');
+
+    if (hasDoctype(xmlData)) {
+      throw new Error('El archivo lleva una declaración DOCTYPE, que el XML del centro no usa; no se analiza por seguridad');
+    }
+
+    // Validate before parsing. The parser is lenient: given a truncated file
+    // it returns whatever it managed to read, so a half-downloaded XML would
+    // import as a smaller school, and an update would then treat every user
+    // it could not see as deleted.
+    const validation = XMLValidator.validate(xmlData);
+    if (validation !== true) {
+      const { line, col, msg } = validation.err;
+      throw new Error(`El archivo XML no es válido (línea ${line}, columna ${col}): ${msg}`);
+    }
+
+    // Validated as the file is, so a reported line and column point at it
+    const jsonData = this.parser.parse(decodeCharacterReferences(xmlData));
+
+    if (!('centro' in jsonData)) {
+      throw new Error('El archivo no tiene el elemento <centro> que envuelve los datos del centro');
+    }
+
+    return jsonData.centro;
+  }
+
   async parse() {
     try {
-      const { size } = fs.statSync(this.xmlPath);
-      if (size > MAX_XML_BYTES) {
-        throw new Error(`El archivo ocupa ${Math.round(size / 1024 / 1024)} MB, más de lo que puede ocupar un XML del centro (${MAX_XML_BYTES / 1024 / 1024} MB)`);
-      }
-
-      const xmlData = fs.readFileSync(this.xmlPath, 'utf8');
-
-      if (hasDoctype(xmlData)) {
-        throw new Error('El archivo lleva una declaración DOCTYPE, que el XML del centro no usa; no se analiza por seguridad');
-      }
-
-      // Validate before parsing. The parser is lenient: given a truncated file
-      // it returns whatever it managed to read, so a half-downloaded XML would
-      // import as a smaller school, and an update would then treat every user
-      // it could not see as deleted.
-      const validation = XMLValidator.validate(xmlData);
-      if (validation !== true) {
-        const { line, col, msg } = validation.err;
-        throw new Error(`El archivo XML no es válido (línea ${line}, columna ${col}): ${msg}`);
-      }
-
-      // Validated as the file is, so a reported line and column point at it
-      const jsonData = this.parser.parse(decodeCharacterReferences(xmlData));
+      const centro = this.readCentro();
 
       const result = {
         groups: [],
@@ -122,12 +140,6 @@ class XMLUserParser {
       // NOTE: XML tags are in Spanish as per source file specification
       // Tags: grupos, alumnos, docentes, no_docentes
       // Fields are XML attributes, not child nodes
-
-      if (!('centro' in jsonData)) {
-        throw new Error('El archivo no tiene el elemento <centro> que envuelve los datos del centro');
-      }
-
-      const centro = jsonData.centro;
 
       if (!centro || typeof centro !== 'object') {
         throw new Error(NO_USERS);
@@ -167,6 +179,71 @@ class XMLUserParser {
       return result;
     } catch (error) {
       console.error('Error parsing XML:', error);
+      throw new Error('No se pudo procesar el archivo XML: ' + error.message);
+    }
+  }
+
+  /**
+   * The fields of the XML the project does not keep, for exports that need
+   * them (Inventario Legacy)
+   *
+   * The project stores only what it works with; the school's XML carries
+   * dozens of attributes more per person. Rather than storing them, an export
+   * that needs a few reads them from the XML the project was built from.
+   * Everything is text, as in parse(), and missing attributes are ''.
+   *
+   * @returns {Promise<{
+   *   groups: Map<string, {capacity: string, tutorDocument: string, official: string}>,
+   *   students: Map<string, {sex: string, status: string, enrollmentDate: string}>,
+   *   staff: Map<string, {first_name: string, last_name1: string, last_name2: string}>
+   * }>} keyed by group code, NIA and document
+   */
+  async parseDetails() {
+    try {
+      const centro = this.readCentro() || {};
+      const list = (parent, tag) => {
+        const items = parent && parent[tag];
+        if (!items) return [];
+        return (Array.isArray(items) ? items : [items]).filter((item) => item && typeof item === 'object');
+      };
+      const text = (item, name) => String(item[`@_${name}`] ?? '').trim();
+
+      const groups = new Map();
+      for (const group of list(centro.grupos, 'grupo')) {
+        const code = text(group, 'codigo');
+        if (!code) continue;
+        groups.set(code, {
+          capacity: text(group, 'capacidad'),
+          tutorDocument: text(group, 'tutor_ppal'),
+          official: text(group, 'oficial')
+        });
+      }
+
+      const students = new Map();
+      for (const student of list(centro.alumnos, 'alumno')) {
+        const nia = text(student, 'NIA');
+        if (!nia) continue;
+        students.set(nia, {
+          sex: text(student, 'sexo'),
+          status: text(student, 'estado_matricula'),
+          enrollmentDate: text(student, 'fecha_matricula')
+        });
+      }
+
+      // Teachers and non-teaching staff, to name a group's tutor
+      const staff = new Map();
+      for (const person of [...list(centro.docentes, 'docente'), ...list(centro.no_docentes, 'no_docente')]) {
+        const document = text(person, 'documento');
+        if (!document || staff.has(document)) continue;
+        staff.set(document, {
+          first_name: text(person, 'nombre'),
+          last_name1: text(person, 'apellido1'),
+          last_name2: text(person, 'apellido2')
+        });
+      }
+
+      return { groups, students, staff };
+    } catch (error) {
       throw new Error('No se pudo procesar el archivo XML: ' + error.message);
     }
   }

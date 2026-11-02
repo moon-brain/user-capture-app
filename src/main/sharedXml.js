@@ -251,6 +251,44 @@ async function publishAppliedXml({ dbManager, repositoryPath, xmlPath, options }
   }
 }
 
+/**
+ * Find a file with the XML the project was built from, byte for byte
+ *
+ * For exports that need fields of the XML the project does not keep. The copy
+ * published in Centro is tried first: it is never overwritten. Then the file
+ * the project was created or last updated from, which may have been replaced
+ * since, so it is only accepted if its content is still the applied one.
+ * Projects from before 1.25 have no record of what was applied, so for them
+ * that file is taken as it is (`exact: false`).
+ *
+ * @param {Object} params
+ * @param {{ getProjectSetting: (key: string) => Promise<string|null> }} params.dbManager
+ * @param {string|null} params.repositoryPath
+ * @returns {Promise<{ filePath: string, exact: boolean }|null>} null if there is none
+ */
+async function locateAppliedXml({ dbManager, repositoryPath }) {
+  const applied = await getAppliedXml(dbManager);
+  const xmlPath = await dbManager.getProjectSetting('xmlFilePath');
+
+  const candidates = [];
+  if (applied && applied.fileName && repositoryPath) {
+    candidates.push(path.join(repositoryPath, SHARED_XML_FOLDER, applied.fileName));
+  }
+  if (xmlPath) candidates.push(xmlPath);
+
+  for (const filePath of candidates) {
+    let content;
+    try {
+      content = await fs.promises.readFile(filePath);
+    } catch {
+      continue;
+    }
+    if (!applied) return { filePath, exact: false };
+    if (hashXml(content) === applied.hash) return { filePath, exact: true };
+  }
+  return null;
+}
+
 // Enough to hold the <centro> start tag, which comes first
 const HEAD_BYTES = 64 * 1024;
 const COURSE_PATTERN = /<centro\b[^>]*?\scurso\s*=\s*["'](\d{4})["']/;
@@ -387,5 +425,6 @@ module.exports = {
   publishXml,
   getAppliedXml,
   setAppliedXml,
-  publishAppliedXml
+  publishAppliedXml,
+  locateAppliedXml
 };

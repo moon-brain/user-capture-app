@@ -24,7 +24,8 @@ const {
   publishAppliedXml,
   publishProjectXml,
   readCourse,
-  findNewerXml
+  findNewerXml,
+  locateAppliedXml
 } = require('../../../src/main/sharedXml');
 
 describe('sharedXml', () => {
@@ -375,6 +376,56 @@ describe('sharedXml', () => {
 
         await expect(find(null, { currentHash: hashXml(xmlFor(2026)) })).resolves.toBeNull();
       });
+    });
+  });
+
+  // Exports that need fields the project does not keep read them from here
+  describe('locateAppliedXml()', () => {
+    let xmlPath;
+
+    beforeEach(() => {
+      xmlPath = path.join(root, 'usuarios.xml');
+    });
+
+    const applied = (fileName = null) => JSON.stringify({ hash: hashXml(XML), fileName, appliedAt: NOW.toISOString() });
+
+    test('should prefer the copy published in Centro, which is never overwritten', async () => {
+      const { fileName } = await publishXml(repositoryPath, XML, { now: NOW, team: 'PC-FOTOS' });
+      fs.writeFileSync(xmlPath, XML);
+      const db = makeDb({ sharedXml: applied(fileName), xmlFilePath: xmlPath });
+
+      await expect(locateAppliedXml({ dbManager: db, repositoryPath }))
+        .resolves.toEqual({ filePath: path.join(centroPath, fileName), exact: true });
+    });
+
+    test('should fall back on the original file while it is still the applied one', async () => {
+      fs.writeFileSync(xmlPath, XML);
+      const db = makeDb({ sharedXml: applied(), xmlFilePath: xmlPath });
+
+      await expect(locateAppliedXml({ dbManager: db, repositoryPath: null }))
+        .resolves.toEqual({ filePath: xmlPath, exact: true });
+    });
+
+    test('should not take the original file once replaced by another XML', async () => {
+      fs.writeFileSync(xmlPath, OTHER);
+      const db = makeDb({ sharedXml: applied(), xmlFilePath: xmlPath });
+
+      await expect(locateAppliedXml({ dbManager: db, repositoryPath })).resolves.toBeNull();
+    });
+
+    test('should take the original file as it is on a project from before 1.25', async () => {
+      fs.writeFileSync(xmlPath, OTHER);
+      const db = makeDb({ xmlFilePath: xmlPath });
+
+      await expect(locateAppliedXml({ dbManager: db, repositoryPath }))
+        .resolves.toEqual({ filePath: xmlPath, exact: false });
+    });
+
+    test('should find nothing when no file is left', async () => {
+      const db = makeDb({ sharedXml: applied('centro_20261031180509_PC-FOTOS.xml'), xmlFilePath: xmlPath });
+
+      await expect(locateAppliedXml({ dbManager: db, repositoryPath })).resolves.toBeNull();
+      await expect(locateAppliedXml({ dbManager: makeDb(), repositoryPath })).resolves.toBeNull();
     });
   });
 });
