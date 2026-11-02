@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.26.0](https://github.com/moon-brain/user-capture-app/compare/v1.25.0...v1.26.0) (2026-11-02)
+
+### Features
+
+* export the files for Inventario Legacy ([3061084](https://github.com/moon-brain/user-capture-app/commit/3061084231a22de2a73ab0e1d9cce05ce11aae38))
+
 ## [1.25.0](https://github.com/moon-brain/user-capture-app/compare/v1.24.1...v1.25.0) (2026-10-31)
 
 ### Features
