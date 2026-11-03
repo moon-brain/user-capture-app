@@ -2,50 +2,68 @@
 
 ## Estado actual
 
-- Versión **1.19.0** publicada el 2026-09-25 (menú **Orla** con interruptor
-  para apagar el servicio de orla; el antiguo «Orlas en PDF» pasa a ser el
-  listado con fotografías por grupo).
-- `main` está al día con el tag `v1.19.0`; sin fallos abiertos en
-  `docs/FALLOS_PENDIENTES.md` ni en `TO-DO.md`.
-- Dos líneas de trabajo abiertas en ramas: orla en PSD (`feat/orla-psd`, solo
-  el plan) y publicación de fotos en ITACA (`feat/publicacion-itaca`, plan y
-  prototipo de la fase 1 sin probar).
+- Versión **1.26.0** publicada el 2026-11-02 (exportación **Archivos para
+  Inventario Legacy**, comprobada por el centro: los tres CSV se importaron
+  bien). La 1.25.0 (2026-10-31) trajo el XML del centro compartido por la
+  carpeta `Centro` del depósito y el aviso de uno más reciente.
+- `main` está al día con el tag `v1.26.0`; sin fallos abiertos en
+  `docs/FALLOS_PENDIENTES.md`.
+- Desde el 2026-10-31 el flujo es rama + pull request con «Rebase and merge»,
+  CI en GitHub (tipos, Jest y prueba en Electron real) y hooks locales.
+  `npm run release:publish` ya funciona solo con los tags antiguos (#14,
+  primera ejecución real en la 1.26.0).
+- Dos líneas de trabajo en ramas largas: orla en PSD (`feat/orla-psd`, solo el
+  plan) y publicación en ITACA (`feat/publicacion-itaca`, solo local).
 
 ## Próximo paso
 
-**Prioridad: terminar el prototipo de subida a ITACA.** Probarlo desde la red
-del centro (`node scripts/itaca-prototype.mjs`; sin argumentos entra en modo
-descubrimiento) y traer los `report.json` para completar los selectores. La
-orla en PSD espera.
+**Revisar los cinco pull requests de Dependabot** (#1–#4 y #6). Los de
+`actions/checkout`, `actions/setup-node` y acorn deberían entrar sin más si la
+CI pasa. **chokidar 6** es solo ESM y Jest 29 no puede cargarlo (como pasó con
+archiver 8): no se acepta hasta pasar a Jest 30, que es justo el otro PR
+(`jest-environment-jsdom` 30), así que van juntos y con calma. Después, ITACA.
 
 ## A medias / roto
 
-- **Publicación en ITACA** (`feat/publicacion-itaca`, 1 commit con el plan,
-  8 por detrás de `main`): el prototipo de la fase 1
-  (`scripts/itaca-prototype.mjs`, `itaca-prototype-electron.cjs`,
-  `itaca-selectors.json`) está **sin commitear y en `main`**, no en la rama.
-  La dependencia `playwright-core` está en `stash@{0}` de esa rama. No se ha
-  ha probado con éxito contra ITACA; hay pruebas previstas en la red del
-  centro el 2026-09-26.
-- **Orla en PSD** (`feat/orla-psd`, 1 commit con `docs/ORLA_PSD_PLAN.md`, 18
-  por detrás de `main`): nada implementado; las rutas de menú del plan deben
-  pasar a **Orla > …** al rebasar.
-- **CI**: `.github/workflows/tests.yml` comprueba tipos, tests y la prueba en
-  Electron en cada push a `main` y en cada pull request; Dependabot propone las
-  actualizaciones. Se sigue publicando desde local (el `release.yml` antiguo se
-  quitó el 2026-10-31). Pendiente de que alguien active en GitHub las alertas
-  de seguridad de Dependabot y mire la primera ejecución de la CI.
-- **Sin lint** (typecheck sí, desde el 2026-10-31). Recomendado: ESLint solo con errores reales
-  (variables sin definir o sin usar), sin reglas de formato. Pendiente de
-  decidir; va después de ITACA.
+- **Publicación en ITACA** (`feat/publicacion-itaca`, 3 commits: plan,
+  prototipo con `playwright-core` y auditoría del CSV de carnets; 58 por
+  detrás de `main`). Todo está ya commiteado en la rama, nada en `main` ni en
+  el stash. **No se ha probado contra ITACA**: solo se puede desde la red del
+  centro (`node scripts/itaca-prototype.mjs`, sin argumentos entra en modo
+  descubrimiento) y hay que traer los `report.json`. La rama **no se sube**.
+- **Orla en PSD** (`feat/orla-psd`, 1 commit con `docs/ORLA_PSD_PLAN.md`, 68
+  por detrás de `main`): nada implementado; las rutas del plan deben pasar a
+  **Orla > …** al rebasar.
+- **Edu Inventory Manager frente a Legacy**: Legacy deja fuera al alumnado de
+  baja, el grupo Eliminados y los grupos internos; Edu Inventory Manager no.
+  El centro lo dejó así «de momento». Las dos exportaciones escriben
+  `Personal.csv` y `Grupos.csv`: conviene exportarlas a carpetas distintas.
+- **Aviso `DEP0190`** al publicar: `publish-release.mjs` usa
+  `spawnSync(..., { shell: true })`. Inofensivo (argumentos fijos); arreglo
+  pequeño opcional.
+- **Sin lint** (typecheck sí). Recomendado: ESLint solo con errores reales,
+  sin reglas de formato. Pendiente de decidir.
 - **Documentación desfasada**: `AGENTS.md` dice que no hay tests; `README.md`
-  pide Node 16 y dice que el recibo se imprime al marcar la orla como pagada
-  (ahora es con el botón **Imp. Recibo**).
-- **Restos**: ramas `build/win` y `build02` (octubre de 2025, ya contenidas en
-  `main`); un archivo `nul` en la raíz (ignorado en `.gitignore`); `src/renderer/_poc/`
-  `[?]` si sigue haciendo falta.
+  pide Node 16 (hace falta ≥ 22.12).
+- **Restos**: `src/renderer/_poc/` `[?]` si sigue haciendo falta; ramas
+  remotas ya fusionadas (`feat/shared-xml-*`, `release/1.25.0`, `release/1.26.0`,
+  `fix/*`) que se pueden borrar.
 
 ## Diario
+
+### 2026-11-03
+
+Sesión del 2026-10-31 al 2026-11-02. Revisión de arquitectura y puesta al día
+de dependencias (sharp 0.35, pdfkit 0.20, fast-xml-parser 5, `node:sqlite` en
+lugar de sqlite3, yazl en lugar de archiver), módulos frontera con
+`// @ts-check` y tests de contrato, muestras de compatibilidad de la 1.6.0 y
+la 1.24.1, CI, Dependabot y hooks. Publicadas la **1.25.0** (XML compartido en
+`Centro/` y aviso de uno más reciente) y la **1.26.0** (exportación para
+Inventario Legacy: tres CSV en Windows-1252 y CRLF con los datos que faltan
+leídos del XML aplicado, sin cambiar el esquema; fotos en ZIP nombradas por
+NIA o DNI). El centro confirmó que Inventario Legacy importa los archivos.
+Borradas de la carpeta temporal las salidas de prueba y la copia de la base de
+datos real.
 
 ### 2026-09-26
 

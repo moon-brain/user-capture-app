@@ -15,6 +15,7 @@ flowchart LR
   PR["Auxiliar de recibos C#<br/>impresora térmica"]
   GH["GitHub Releases<br/>actualizaciones"]
   XML["XML del centro"]
+  CI["GitHub Actions<br/>tipos, Jest, Electron real"]
 
   R -->|IPC| P --> M
   M --> DB
@@ -23,6 +24,9 @@ flowchart LR
   M -->|stdin/stdout JSON| PR
   M -->|electron-updater| GH
   XML --> M
+  M -->|publica en Centro/| DEP
+  DEP -->|XML más reciente| M
+  CI -.->|cada push y PR| App
 ```
 
 ## Mapa de carpetas
@@ -57,9 +61,13 @@ timeline
   2026-09-18 : v1.13 visor en otra ventana, plan de orla en PSD
   2026-09-22 : v1.15–1.17 fotografías por grupo, plan de ITACA
   2026-09-25 : v1.19 menú Orla
-  2026-09-26 : Estás aquí
+  2026-09-26 : Sistema de contexto (NOTES, ARCHITECTURE)
+  2026-10-10 : v1.24 solicitudes al exportar al depósito
+  2026-10-31 : v1.25 node:sqlite, CI y PR, XML compartido en Centro/
+  2026-11-02 : v1.26 exportación para Inventario Legacy
+  2026-11-03 : Estás aquí
 ```
 
 ---
 
-Generado a partir del repo el 2026-09-26; se regenera con /cerrar-sesion.
+Generado a partir del repo el 2026-11-03; se regenera con /cerrar-sesion.
